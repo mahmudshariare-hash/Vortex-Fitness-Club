@@ -1,0 +1,152 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+:root {
+    --bg-color: #f8f9fa;
+    --header-bg: #18181b;
+    --card-bg: #ffffff;
+    --text-primary: #212529;
+    --text-secondary: #6c757d;
+    --accent-color: #ef4444;
+    --green: #198754;
+    --blue: #0d6efd;
+    --border-color: #dee2e6;
+    --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    font-family: 'Poppins', sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-primary);
+}
+
+/* Header */
+.header {
+    background-color: var(--header-bg);
+    color: white;
+    padding: 0 2rem;
+    box-shadow: var(--shadow);
+}
+.header-content {
+    max-width: 1280px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 68px;
+}
+.logo-container { display: flex; align-items: center; gap: 0.75rem; }
+.logo-icon {
+    width: 2.5rem; height: 2.5rem;
+    background-color: var(--accent-color);
+    border-radius: 0.5rem;
+    display: flex;
+    align-items: center; justify-content: center;
+    font-weight: 700; font-size: 1.25rem;
+}
+.logout-btn {
+    color: white;
+    text-decoration: none;
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    transition: background-color 0.2s;
+}
+.logout-btn:hover { background-color: #27272a; }
+
+/* Main Container & Toolbar */
+.container { max-width: 1280px; margin: 2rem auto; padding: 0 2rem; }
+.toolbar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 2rem; }
+.title { font-size: 1.75rem; }
+
+/* Filters */
+.filters { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.filter-btn {
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    background-color: var(--card-bg);
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+.filter-btn.active {
+    background-color: var(--accent-color);
+    color: white;
+    border-color: var(--accent-color);
+}
+.filter-btn:not(.active):hover { background-color: #e9ecef; }
+#date-range-picker {
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    font-family: 'Poppins', sans-serif;
+    min-width: 240px;
+}
+
+/* Summary Cards */
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+.summary-card {
+    background-color: var(--card-bg);
+    padding: 1.5rem;
+    border-radius: 0.75rem;
+    box-shadow: var(--shadow);
+    text-align: center;
+}
+.summary-card h4 {
+    font-size: 1rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+}
+.summary-card p {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+/* Sales Lists */
+.sales-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+}
+.sales-list-card {
+    background-color: var(--card-bg);
+    padding: 1.5rem;
+    border-radius: 0.75rem;
+    box-shadow: var(--shadow);
+}
+.sales-list-card h3 { margin-bottom: 1rem; }
+.sales-list-card ul {
+    list-style: none;
+    padding: 0;
+}
+.sales-list-card li {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #f1f3f5;
+}
+.sales-list-card li:last-child { border-bottom: none; }
+.sales-list-card li span:first-child { font-weight: 500; }
+.sales-list-card li span:last-child { font-weight: 700; }
+
+/* Loading & Empty States */
+.loading-spinner { text-align: center; padding: 4rem; }
+.spinner { width: 3rem; height: 3rem; border-radius: 50%; border: 4px solid var(--border-color); border-top-color: var(--accent-color); animation: spin 1s linear infinite; margin: 0 auto; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.empty-message { text-align: center; padding: 3rem; color: var(--text-secondary); font-size: 1.1rem; }
+
+.hidden { display: none !important; }
+
+@media (max-width: 768px) {
+    .toolbar, .filters { flex-direction: column; align-items: stretch; }
+    .sales-grid { grid-template-columns: 1fr; }
+}

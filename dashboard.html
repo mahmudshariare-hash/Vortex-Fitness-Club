@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vortex Staff Dashboard</title>
+    <link rel="stylesheet" href="dashboard.css">
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <div class="logo-container">
+                <div class="logo-icon">V</div>
+                <h1>VORTEX - Staff Dashboard</h1>
+            </div>
+            <a href="index.html" class="logout-btn">Logout</a>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="main-tabs">
+            <button class="main-tab-btn" data-tab="menu">Menu Management</button>
+            <button class="main-tab-btn active" data-tab="orders">Orders Management</button>
+            <button class="main-tab-btn" data-tab="transactions">Transactions Analytics</button>
+        </div>
+
+        <div id="menu-section" class="tab-content">
+            <div class="toolbar">
+                <h2 class="title">Menu Items</h2>
+                <button id="add-item-btn" class="btn btn-primary">
+                    <i data-lucide="plus"></i> Add New Item
+                </button>
+            </div>
+            <div id="loading-menu" class="loading-spinner"><div class="spinner"></div></div>
+            <div class="table-container">
+                <table id="menu-table" class="menu-table hidden">
+                    <thead><tr><th>Item</th><th>Category</th><th>Price</th><th>Status</th><th>Actions</th></tr></thead>
+                    <tbody id="menu-table-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="orders-section" class="tab-content active">
+            <h2 class="title">Current Orders</h2>
+            <div id="loading-orders" class="loading-spinner"><div class="spinner"></div></div>
+            <div id="orders-grid" class="orders-grid"></div>
+            <p id="no-orders-msg" class="empty-message hidden">No active orders at the moment.</p>
+        </div>
+
+        <div id="transactions-section" class="tab-content">
+            <h2 class="title">Daily Transactions</h2>
+            <div id="loading-transactions" class="loading-spinner"><div class="spinner"></div></div>
+            <div id="transactions-summary" class="transactions-summary"></div>
+            <div id="transactions-list" class="transactions-list"></div>
+            <p id="no-transactions-msg" class="empty-message hidden">No completed transactions today.</p>
+        </div>
+    </main>
+
+    <div id="item-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+             <div class="modal-header">
+                <h3 id="modal-title">Add Menu Item</h3>
+                <button id="close-modal-btn" class="modal-close-button"><i data-lucide="x"></i></button>
+            </div>
+            <form id="item-form" class="modal-body">
+                <input type="hidden" id="item-id">
+                <div class="form-grid"><div class="form-group"><label for="name">Name *</label><input type="text" id="name" required></div><div class="form-group"><label for="category">Category *</label><select id="category" required><option>Smoothies</option><option>Protein Bowls</option><option>Meals</option><option>Snacks</option><option>Supplements</option></select></div></div>
+                <div class="form-group"><label for="description">Description *</label><textarea id="description" rows="3" required></textarea></div>
+                <div class="form-grid"><div class="form-group"><label for="price">Price *</label><input type="number" id="price" step="0.01" required></div><div class="form-group"><label for="image">Image</label><input type="file" id="image" accept="image/*"><span id="current-image" class="current-image-text"></span></div></div>
+                <h4 class="form-section-title">Nutritional Information</h4>
+                <div class="form-grid grid-four-cols"><div class="form-group"><label for="calories">Calories</label><input type="number" id="calories"></div><div class="form-group"><label for="protein">Protein (g)</label><input type="number" id="protein"></div><div class="form-group"><label for="carbohydrates">Carbs (g)</label><input type="number" id="carbohydrates"></div><div class="form-group"><label for="fats">Fats (g)</label><input type="number" id="fats"></div></div>
+                <div class="form-grid grid-four-cols"><div class="form-group"><label for="fiber">Fiber (g)</label><input type="number" id="fiber"></div><div class="form-group"><label for="sugar">Sugar (g)</label><input type="number" id="sugar"></div><div class="form-group"><label for="sodium">Sodium (mg)</label><input type="number" id="sodium"></div></div>
+                <h4 class="form-section-title">Tags & Allergens</h4>
+                <div class="form-grid grid-three-cols"><div class="form-group"><label for="vitamins">Vitamins</label><input type="text" id="vitamins" placeholder="e.g., C, B12, E"></div><div class="form-group"><label for="allergens">Allergens</label><input type="text" id="allergens" placeholder="e.g., Nuts, Dairy"></div><div class="form-group"><label for="dietary_tags">Dietary Tags</label><input type="text" id="dietary_tags" placeholder="e.g., Vegan, Gluten-Free"></div></div>
+                <div class="modal-footer"><button type="button" id="cancel-btn" class="btn btn-secondary">Cancel</button><button type="submit" class="btn btn-primary">Save Item</button></div>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="dashboard.js"></script>
+</body>
+</html>
