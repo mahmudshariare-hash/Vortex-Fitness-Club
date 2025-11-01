@@ -40,13 +40,10 @@ body {
     height: 68px;
 }
 .logo-container { display: flex; align-items: center; gap: 0.75rem; }
-.logo-icon {
-    width: 2.5rem; height: 2.5rem;
-    background-color: var(--accent-color);
+.logo-image {
+    height: 8rem;
+    width: 12rem;
     border-radius: 0.5rem;
-    display: flex;
-    align-items: center; justify-content: center;
-    font-weight: 700; font-size: 1.25rem;
 }
 .logout-btn {
     color: white;

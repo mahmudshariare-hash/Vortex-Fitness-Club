@@ -1,5 +1,10 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+/* ADD THIS LINE AT THE TOP OF menue.css */
+@import url('https://fonts.googleapis.com/css2?family=Roboto+Mono&display=swap');
 
+/* ... rest of your CSS file starts here ... */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+/* ... */
 :root {
     --bg-color: #f4f4f5;
     --card-bg: #ffffff;
@@ -55,22 +60,18 @@ body {
     gap: 0.75rem;
 }
 
-.logo-icon {
-    width: 2.5rem;
-    height: 2.5rem;
-    background-color: var(--accent-color);
+.logo-image {
+    height: 8rem; /* 40px on desktop */
+    width: 12rem;
     border-radius: 0.5rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 700;
-    font-size: 1.25rem;
 }
 
 .logo-title {
     font-size: 1.5rem;
     font-weight: 700;
     letter-spacing: -0.025em;
+    font-family: 'Roboto Mono', monospace;
+    position: center;
 }
 
 .logo-subtitle {
@@ -587,5 +588,5 @@ body {
     }
     
     .logo-title { font-size: 1.25rem; }
-    .logo-icon { width: 2rem; height: 2rem; font-size: 1.1rem; }
+    .logo-image { width: 2rem; height: 2rem; font-size: 1.1rem; }
 }
