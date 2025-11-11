@@ -20,29 +20,43 @@
 <body>
 
   <!-- === HEADER === -->
-  <header class="sticky-header">
-    <div class="header-content">
-      <div class="logo-container">
-        <img src="https://i.postimg.cc/ZRQYcx0d/Fitness-Club-1-removebg-preview.png" alt="Vortex Logo" class="logo-image">
-        <div>
-          <h1 class="logo-title">Cafe Menu</h1>
-        </div>
-      </div>
-
-      <div class="header-buttons">
-        <!-- 🌙 DARK MODE TOGGLE -->
-        <button id="theme-toggle" class="theme-toggle" aria-label="Toggle dark mode">
-          <i data-lucide="moon"></i>
-        </button>
-
-        <!-- 🛒 CART BUTTON -->
-        <button id="cart-button" class="cart-button">
-          <i data-lucide="shopping-cart"></i>
-          <span id="cart-item-count" class="cart-item-count hidden">0</span>
-        </button>
-      </div>
+<header class="sticky-header">
+  <div class="header-content">
+    <!-- Left: logo + title -->
+    <div class="logo-container">
+      <img
+        src="https://i.postimg.cc/ZRQYcx0d/Fitness-Club-1-removebg-preview.png"
+        alt="Vortex Logo"
+        class="logo-image"
+      />
+      <h1 class="logo-title">Cafe Menu</h1>
     </div>
-  </header>
+
+    <!-- Right: actions (all in one flex row) -->
+    <div class="header-buttons">
+      <a
+        href="../Suppliment/index.html"
+        target="_blank"
+        id="supplements-btn"
+        class="category-btn"
+      >
+        Supplements Portal
+      </a>
+
+      <!-- 🌙 DARK MODE TOGGLE -->
+      <button id="theme-toggle" class="theme-toggle" aria-label="Toggle dark mode">
+        <i data-lucide="moon"></i>
+      </button>
+
+      <!-- 🛒 CART BUTTON -->
+      <button id="cart-button" class="cart-button" aria-label="Open cart">
+        <i data-lucide="shopping-cart"></i>
+        <span id="cart-item-count" class="cart-item-count hidden">0</span>
+      </button>
+    </div>
+  </div>
+</header>
+
 
   <!-- === MAIN CONTENT === -->
   <main class="main-content">

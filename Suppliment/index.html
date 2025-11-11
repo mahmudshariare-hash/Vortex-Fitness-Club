@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SupplementStore (Vanilla JS - Split)</title>
+
+  <!-- Tailwind via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide icons (global) -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- FIX: correct filename -->
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body class="min-h-screen bg-gray-900 text-white selection:bg-cyan-500/30 selection:text-white">
+  <!-- Header -->
+  <div id="header-root"></div>
+
+  <!-- Main -->
+  <main id="app" class="min-h-[60vh]"></main>
+
+  <!-- Footer -->
+  <div id="footer-root"></div>
+
+  <!-- Cart panel -->
+  <div id="cart-root"></div>
+
+  <!-- App entry -->
+  <script type="module" src="./main.js"></script>
+</body>
+</html>

@@ -18,6 +18,71 @@
     --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
     --header-height: 68px; /* Height of the sticky header */
 }
+.theme-toggle i {
+  transition: transform 0.3s ease;
+}
+.theme-toggle:active i {
+  transform: rotate(180deg) scale(0.9);
+}
+
+/* Nutrition info contrast fix in dark mode */
+body.dark-mode .card-nutrition-details {
+  background-color: #18181b;
+  color: #e4e4e7;
+}
+
+body.dark-mode .nutrition-item span:first-child {
+  color: #d4d4d8; /* labels */
+}
+body.dark-mode .nutrition-item span:last-child {
+  color: #ffffff; /* values */
+}
+
+body.dark-mode .card-nutrition-details .allergens {
+  color: #f87171; /* red alert stays readable */
+}
+
+/* Remove white square background/border from moon/sun icon */
+.theme-toggle {
+  background: none;
+  border: none;
+  padding: 0.4rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-light);
+  transition: background-color 0.2s;
+}
+
+.theme-toggle:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+body.dark-mode .theme-toggle:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+/* Dark theme: override CSS variables when body has .dark-mode */
+body.dark-mode {
+  --bg-color: #0b0b0f;
+  --card-bg: #121216;
+  --header-bg: #0a0a0a;
+  --text-primary: #e5e7eb;
+  --text-secondary: #a1a1aa;
+  --text-light: #ffffff;
+  --accent-color: #ef4444;       /* keep brand color */
+  --accent-hover: #dc2626;
+  --border-color: #27272a;
+}
+
+/* Optional tweaks so neutrals look right in dark */
+body.dark-mode .category-btn:not(.active) { background-color: #1f1f22; color: #d4d4d8; }
+body.dark-mode .category-btn:not(.active):hover { background-color: #2a2a2e; }
+body.dark-mode .search-input,
+body.dark-mode .dietary-filter { background: #0f0f13; color: var(--text-primary); }
+body.dark-mode .card-image-placeholder { background: linear-gradient(to bottom right, #1f2937, #0f172a); }
 
 * {
     box-sizing: border-box;
@@ -44,16 +109,20 @@ body {
     align-items: center;
 }
 
-.header-content {
-    max-width: 1280px;
-    width: 100%;
-    margin: 0 auto;
-    padding: 1rem 1.5rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+.header-buttons {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;             /* spacing between portal / moon / cart */
 }
-
+.header-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* separates logo left, buttons right */
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
 .logo-container {
     display: flex;
     align-items: center;
@@ -589,4 +658,58 @@ body {
     
     .logo-title { font-size: 1.25rem; }
     .logo-image { width: 2rem; height: 2rem; font-size: 1.1rem; }
+}
+
+/* ===== Supplements button (same height as icon buttons) ===== */
+#supplements-btn {
+  background-color: #ef4444;     /* brand red */
+  color: #fff;
+  font-weight: 600;
+  border: none;
+  height: 2.25rem;               /* 36px */
+  padding: 0 0.9rem;
+  border-radius: 0.5rem;
+  line-height: 1;                /* avoids extra vertical space */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+#supplements-btn:hover { background-color: #dc2626; }
+
+/* ===== Icon buttons: remove white square, unify size ===== */
+.theme-toggle,
+.cart-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;                 /* 36px */
+  height: 2.25rem;
+  border: none;
+  background: transparent;        /* no white box */
+  color: var(--text-light);
+  cursor: pointer;
+  border-radius: 0.5rem;
+  transition: background-color 0.2s ease, transform 0.15s ease;
+}
+.theme-toggle:hover,
+.cart-button:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+.theme-toggle:active,
+.cart-button:active {
+  transform: scale(0.96);
+}
+
+/* Icon size */
+.theme-toggle i,
+.cart-button i {
+  width: 20px;
+  height: 20px;
+}
+
+/* ===== Dark mode tweaks for hover ===== */
+body.dark-mode .theme-toggle:hover,
+body.dark-mode .cart-button:hover {
+  background-color: rgba(255, 255, 255, 0.15);
 }
