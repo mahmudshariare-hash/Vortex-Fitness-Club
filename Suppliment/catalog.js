@@ -4,12 +4,46 @@ import { $, fmtBDT } from "./utils.js";
 
 /* ---------- View ---------- */
 export function viewCatalog() {
-  const cnt = (state.products || []).length;
+  const total = (state.products || []).length;
   return `
     <section class="max-w-6xl mx-auto px-4 pt-24 pb-12">
       <h1 class="text-3xl md:text-4xl font-extrabold mb-6">Product Catalog</h1>
 
-      <p class="text-sm opacity-70 mb-4">Showing ${cnt} of ${cnt} products</p>
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+        <p id="catalog-count" class="text-sm opacity-70">Showing ${total} of ${total} products</p>
+        <div class="flex items-center gap-3">
+          <button id="catalog-reset-filters" class="text-sm px-3 py-2 bg-gray-800 rounded-md hover:bg-gray-700">Reset Filters</button>
+        </div>
+      </div>
+
+      <div class="mb-6 border border-gray-800 rounded-lg p-4 bg-gray-900/40">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">Sort by Price</label>
+            <select id="filter-sort" class="w-full bg-gray-800 text-white px-3 py-2 rounded">
+              <option value="default">Default</option>
+              <option value="price-low-high">Lowest to Highest</option>
+              <option value="price-high-low">Highest to Lowest</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">Availability</label>
+            <select id="filter-stock" class="w-full bg-gray-800 text-white px-3 py-2 rounded">
+              <option value="any">Any</option>
+              <option value="in">In stock</option>
+              <option value="out">Out of stock</option>
+            </select>
+          </div>
+
+          <div class="md:col-span-2">
+            <label class="block text-xs text-gray-400 mb-1">Categories</label>
+            <div id="filter-cats" class="flex flex-wrap gap-2">
+              <!-- categories will be generated dynamically on mount -->
+            </div>
+          </div>
+        </div>
+      </div>
 
       <div id="catalog-grid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
         ${renderCards(state.products)}
@@ -88,8 +122,91 @@ export function mountCatalog(root) {
   const grid = $("#catalog-grid");
   if (!grid) return;
 
+  const countEl = document.getElementById('catalog-count');
+  const sortEl = document.getElementById('filter-sort');
+  const stockEl = document.getElementById('filter-stock');
+  const catsContainer = document.getElementById('filter-cats');
+  const resetBtn = document.getElementById('catalog-reset-filters');
+
+  // Generate category list dynamically from products
+  const uniqueCats = [...new Set((state.products || []).map(p=>p.category))];
+  const catLabelMap = { 'weight-loss': 'Fat burners', 'muscle-building': 'Creatine', 'pre-workout': 'Pre-Workout', 'protein': 'Protein', 'vitamins': 'Vitamins', 'recovery': 'Recovery' };
+  if (catsContainer) {
+    catsContainer.innerHTML = uniqueCats.map(cat=>`<label class="inline-flex items-center gap-2"><input type="checkbox" data-cat="${cat}" class="filter-cat" /> <span class="filter-pill text-sm">${catLabelMap[cat] || cat}</span></label>`).join('');
+  }
+  const catEls = [...document.querySelectorAll('.filter-cat')];
+
+  function getSelectedCats() { return catEls.filter(i=>i.checked).map(i=>i.getAttribute('data-cat')); }
+
+  function savePersistentFilters() {
+    try { localStorage.setItem('catalog_filters_persistent', JSON.stringify({ sort: sortEl?.value || 'default', stock: stockEl?.value || 'any', cats: getSelectedCats() })); } catch(e){}
+  }
+
+  function applyFilters() {
+    const all = state.products || [];
+    const sort = sortEl?.value || 'default';
+    const stock = stockEl?.value || 'any';
+    const selectedCats = getSelectedCats();
+
+    let filtered = all.slice();
+
+    // stock filter
+    if (stock === 'in') filtered = filtered.filter(p=>Number(p.stock) && Number(p.stock) > 0);
+    if (stock === 'out') filtered = filtered.filter(p=>!Number(p.stock) || Number(p.stock) <= 0);
+
+    // categories
+    if (selectedCats.length) filtered = filtered.filter(p=> selectedCats.includes(String(p.category)) );
+
+    // sorting
+    if (sort === 'price-low-high') filtered.sort((a, b) => Number(a.price) - Number(b.price));
+    if (sort === 'price-high-low') filtered.sort((a, b) => Number(b.price) - Number(a.price));
+
+    // update grid
+    grid.innerHTML = renderCards(filtered);
+    animateGrid();
+    if (countEl) countEl.textContent = `Showing ${filtered.length} of ${all.length} products`;
+    savePersistentFilters();
+  }
+
+  // initialize filters from possible stored selection
+  try {
+    // First check for category filter from home page
+    const homeFilter = JSON.parse(localStorage.getItem('catalog_filters') || 'null');
+    if (homeFilter && homeFilter.category) {
+      // Apply the category filter from home page
+      const targetCat = homeFilter.category;
+      catEls.forEach(c=>{ c.checked = c.getAttribute('data-cat') === targetCat; });
+      // Clear this one-time filter so it doesn't persist
+      localStorage.removeItem('catalog_filters');
+    } else {
+      // Otherwise use persistent filters
+      const stored = JSON.parse(localStorage.getItem('catalog_filters_persistent') || 'null');
+      if (stored) {
+        if (sortEl && stored.sort) sortEl.value = stored.sort;
+        if (stockEl && stored.stock) stockEl.value = stored.stock;
+        if (stored.cats && stored.cats.length) {
+          catEls.forEach(c=>{ c.checked = stored.cats.includes(c.getAttribute('data-cat')); });
+        }
+      }
+    }
+  } catch(e) { }
+
+  // attach listeners
+  if (sortEl) sortEl.addEventListener('change', applyFilters);
+  if (stockEl) stockEl.addEventListener('change', applyFilters);
+  catEls.forEach(c=>c.addEventListener('change', applyFilters));
+  resetBtn?.addEventListener('click', ()=>{
+    if (sortEl) sortEl.value = 'default'; 
+    if (stockEl) stockEl.value = 'any'; 
+    catEls.forEach(c=>c.checked=false); 
+    applyFilters();
+  });
+
   // Animate on first mount
   animateGrid();
+
+  // apply once after potential stored filters
+  applyFilters();
 
   // Single delegated listener: add-to-cart vs open details
   grid.addEventListener("click", (e) => {

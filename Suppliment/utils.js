@@ -13,6 +13,9 @@ export const fmtBDT = n => {
   })}`;
 };
 
+// USD currency formatter (alias)
+export const fmtUSD = fmtBDT;
+
 // Icon loader (Lucide)
 export const icons = () => (
   window.lucide && window.lucide.createIcons && window.lucide.createIcons()

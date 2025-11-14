@@ -50,6 +50,49 @@ export const QUIZ_QUESTIONS = [
     ["high","High Intensity","Heavy lifting, HIIT, sprints"],
     ["extreme","Extreme Intensity","Maximum effort training"],
   ]},
+  // Additional questions to improve recommendation accuracy
+  { id:"age", label:"Which age range are you in?", options:[
+    ["under-18","Under 18","Adolescents and teens"],
+    ["18-30","18–30","Young adults"],
+    ["31-50","31–50","Adults"],
+    ["51-plus","51+","Mature adults"],
+  ]},
+  { id:"gender", label:"What's your gender?", options:[
+    ["male","Male","Male (typical male physiology)"],
+    ["female","Female","Female (typical female physiology)"],
+    ["other","Other/Prefer not to say","Prefer not to specify"],
+    ["na","Prefer not to say","Prefer not to specify"],
+  ]},
+  { id:"height", label:"What's your height? (approx)", options:[
+    ["h-<150","Under 150 cm","Petite"],
+    ["h-150-170","150–170 cm","Average height"],
+    ["h-170-185","170–185 cm","Tall"],
+    ["h-185+","Over 185 cm","Very tall"],
+  ]},
+  { id:"weight", label:"What's your weight? (approx)", options:[
+    ["w-<55","Under 55 kg","Lower body mass"],
+    ["w-55-75","55–75 kg","Average body mass"],
+    ["w-75-95","75–95 kg","Higher body mass"],
+    ["w-95+","Over 95 kg","Very high body mass"],
+  ]},
+  { id:"activity", label:"How active is your daily life (outside gym)?", options:[
+    ["sedentary","Sedentary","Mostly sitting, little movement"],
+    ["light","Lightly Active","Some walking, light chores"],
+    ["active","Active","Standing job, regular movement"],
+    ["very-active","Very Active","Manual labor or lots of walking"],
+  ]},
+  { id:"allergies", label:"Do you have any food allergies or dietary restrictions?", options:[
+    ["none","No","No known allergies"],
+    ["dairy","Dairy","Avoid dairy/lactose"],
+    ["soy","Soy","Avoid soy"],
+    ["gluten","Gluten","Avoid gluten"],
+  ]},
+  { id:"sleep", label:"How would you rate your typical sleep quality?", options:[
+    ["poor","Poor","Trouble falling/staying asleep"],
+    ["fair","Fair","Occasional sleep issues"],
+    ["good","Good","Generally restful sleep"],
+    ["excellent","Excellent","Very restorative sleep"],
+  ]},
 ];
 
 export const QUIZ_RECO = {

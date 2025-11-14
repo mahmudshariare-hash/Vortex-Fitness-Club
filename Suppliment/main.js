@@ -6,6 +6,7 @@ import { renderFooter, mountFooter } from "./footer.js";
 import { renderCart, mountCart } from "./cart.js";
 import { viewHome, mountHome } from "./home.js";
 import { viewCatalog, mountCatalog } from "./catalog.js";
+import { viewQuizWrapper, mountQuiz } from "./quiz.js";
 import { viewProductDetail, mountProductDetail } from "./productDetail.js";
 import { ALL_PRODUCTS } from "./data.js";
 
@@ -57,8 +58,9 @@ function renderApp() {
     app.innerHTML = viewProductDetail();
     mountProductDetail(app);
   } else if (state.currentView === "quiz") {
-    app.innerHTML = `<div class="pt-24">${viewHome()}</div>`;
-    mountHome(app);
+    // render the quiz wrapper (standalone quiz page)
+    app.innerHTML = `<div class="pt-24">${viewQuizWrapper()}</div>`;
+    mountQuiz(app);
   }
 
   renderFooterRoot();
@@ -66,6 +68,10 @@ function renderApp() {
 
 /* ---------- Data load ---------- */
 async function loadPortalProducts() {
+  // Start with ALL_PRODUCTS as fallback so products are visible immediately
+  state.products = [...ALL_PRODUCTS];
+  emitRerender();
+  
   try {
     const { data, error } = await supabase
       .from("supplement_products")
@@ -121,9 +127,98 @@ async function onCheckoutClicked() {
     }
   }
 
-  const customer_name = prompt("Customer name? (optional)", "") || "Walk-in";
-  const customer_phone = prompt("Customer phone? (optional)", "") || "";
+  // Show styled checkout form
+  showCheckoutForm();
+}
 
+/* ---------- Styled Checkout Form ---------- */
+function showCheckoutForm() {
+  const subtotal = state.cart.reduce((s, it) => s + it.price * it.quantity, 0);
+  const shipping = 0;
+  const total = subtotal + shipping;
+
+  const overlay = document.createElement('div');
+  overlay.id = 'checkout-overlay';
+  overlay.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  `;
+
+  overlay.innerHTML = `
+    <div style="background: #1f2937; border: 1px solid #374151; border-radius: 12px; padding: 32px; max-width: 500px; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);">
+      <h2 style="color: #fff; font-size: 24px; font-weight: bold; margin-bottom: 24px;">Checkout</h2>
+      
+      <form id="checkout-form">
+        <div style="margin-bottom: 20px;">
+          <label style="display: block; color: #d1d5db; font-size: 14px; font-weight: 500; margin-bottom: 8px;">Customer Name *</label>
+          <input type="text" id="customer-name" placeholder="Enter your name" required style="width: 100%; padding: 10px 12px; background: #374151; border: 1px solid #4b5563; border-radius: 6px; color: #fff; font-size: 14px; box-sizing: border-box;" />
+        </div>
+
+        <div style="margin-bottom: 20px;">
+          <label style="display: block; color: #d1d5db; font-size: 14px; font-weight: 500; margin-bottom: 8px;">Phone Number *</label>
+          <input type="tel" id="customer-phone" placeholder="Enter your phone" required style="width: 100%; padding: 10px 12px; background: #374151; border: 1px solid #4b5563; border-radius: 6px; color: #fff; font-size: 14px; box-sizing: border-box;" />
+        </div>
+
+        <div style="background: #111827; padding: 16px; border-radius: 8px; margin-bottom: 20px;">
+          <div style="display: flex; justify-content: space-between; color: #9ca3af; font-size: 14px; margin-bottom: 8px;">
+            <span>Subtotal:</span>
+            <span>৳${subtotal.toFixed(2)}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; color: #9ca3af; font-size: 14px; margin-bottom: 12px;">
+            <span>Shipping:</span>
+            <span>FREE</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; color: #fff; font-size: 16px; font-weight: bold; padding-top: 12px; border-top: 1px solid #374151;">
+            <span>Total:</span>
+            <span>৳${total.toFixed(2)}</span>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 12px;">
+          <button type="button" id="cancel-checkout" style="flex: 1; padding: 12px 16px; background: #374151; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 14px; transition: all 0.2s;">Cancel</button>
+          <button type="submit" style="flex: 1; padding: 12px 16px; background: linear-gradient(to right, #06b6d4, #3b82f6); color: #fff; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 14px; transition: all 0.2s; transform: scale(1);" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">Place Order</button>
+        </div>
+      </form>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+
+  const form = overlay.querySelector('#checkout-form');
+  const cancelBtn = overlay.querySelector('#cancel-checkout');
+  const nameInput = overlay.querySelector('#customer-name');
+  const phoneInput = overlay.querySelector('#customer-phone');
+
+  cancelBtn.addEventListener('click', () => {
+    overlay.remove();
+  });
+
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) overlay.remove();
+  });
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const customer_name = nameInput.value.trim() || "Walk-in";
+    const customer_phone = phoneInput.value.trim() || "";
+    
+    overlay.remove();
+    await processCheckout(customer_name, customer_phone);
+  });
+
+  nameInput.focus();
+}
+
+async function processCheckout(customer_name, customer_phone) {
   const subtotal = state.cart.reduce((s, it) => s + it.price * it.quantity, 0);
   const shipping = 0;
   const total_amount = subtotal + shipping;

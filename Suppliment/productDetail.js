@@ -62,7 +62,7 @@ export function viewProductDetail() {
 
         <div class="mt-6">
           <h2 class="font-semibold mb-2">Description</h2>
-          <div class="text-sm opacity-85 whitespace-pre-line">
+          <div class="product-description text-sm opacity-85 whitespace-pre-line">
             ${p.description || "—"}
           </div>
         </div>

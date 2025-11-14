@@ -1,16 +1,15 @@
 import { ALL_PRODUCTS } from "./data.js";
 import { $, icons } from "./utils.js";
-import { addToCart, setView } from "./state.js";
-import { mountQuiz, viewQuizWrapper } from "./quiz.js";
+import { addToCart, setView, state } from "./state.js";
 
 function categoriesSection() {
   const cats = [
-    { id:"protein", name:"Protein", description:"Build lean muscle mass", color:"from-blue-400 to-blue-600", count: 2 },
-    { id:"pre-workout", name:"Pre-Workout", description:"Energy & focus boosters", color:"from-orange-400 to-red-500", count: 1 },
-    { id:"vitamins", name:"Vitamins", description:"Essential nutrients", color:"from-green-400 to-green-600", count: 1 },
-    { id:"weight-loss", name:"Fat Burners", description:"Weight management", color:"from-red-400 to-red-600", count: 1 },
-    { id:"recovery", name:"Recovery", description:"Electrolytes & repair", color:"from-pink-400 to-pink-600", count: 1 },
-    { id:"muscle-building", name:"Creatine", description:"Strength & power", color:"from-cyan-400 to-cyan-600", count: 1 },
+    { id:"protein", name:"Protein", description:"Build lean muscle mass", color:"from-blue-400 to-blue-600" },
+    { id:"pre-workout", name:"Pre-Workout", description:"Energy & focus boosters", color:"from-orange-400 to-red-500" },
+    { id:"vitamins", name:"Vitamins", description:"Essential nutrients", color:"from-green-400 to-green-600" },
+    { id:"weight-loss", name:"Fat Burners", description:"Weight management", color:"from-red-400 to-red-600" },
+    { id:"recovery", name:"Recovery", description:"Electrolytes & repair", color:"from-pink-400 to-pink-600" },
+    { id:"muscle-building", name:"Creatine", description:"Strength & power", color:"from-cyan-400 to-cyan-600" },
   ];
   return `
   <section class="py-20 bg-gray-800/50">
@@ -23,7 +22,10 @@ function categoriesSection() {
         <p class="text-xl text-gray-300 max-w-3xl mx-auto">Find the perfect supplements for your fitness goals and lifestyle</p>
       </div>
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        ${cats.map((c, i)=>`
+        ${cats.map((c, i)=>{
+          const products = (state.products && state.products.length>0 ? state.products : ALL_PRODUCTS);
+          const cnt = (products || []).filter(p=>String(p.category)===String(c.id)).length;
+          return `
           <div class="group relative p-8 rounded-2xl border border-gray-700/50 bg-white/5 hover:bg-white/10 backdrop-blur-sm cursor-pointer transform transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-white/5 animate-fade-in-up"
                style="animation-delay:${i*100}ms" data-action="category-${c.id}">
             <div class="relative z-10">
@@ -31,7 +33,7 @@ function categoriesSection() {
               <div class="mb-4">
                 <div class="flex items-center justify-between mb-2">
                   <h3 class="text-2xl font-bold text-white group-hover:text-cyan-400 transition-colors duration-200">${c.name}</h3>
-                  <span class="text-sm text-gray-400 bg-gray-700/50 px-3 py-1 rounded-full">${c.count} items</span>
+                  <span class="text-sm text-gray-400 bg-gray-700/50 px-3 py-1 rounded-full">${cnt} items</span>
                 </div>
                 <p class="text-gray-300 group-hover:text-white transition-colors duration-200">${c.description}</p>
               </div>
@@ -41,7 +43,7 @@ function categoriesSection() {
             </div>
             <div class="absolute inset-0 rounded-2xl border border-gradient-animated opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
           </div>
-        `).join("")}
+        `}).join("")}
       </div>
       <div class="text-center mt-12">
         <button data-action="view-all" class="group inline-flex items-center space-x-2 bg-gradient-to-r from-cyan-400 to-blue-500 text-white px-8 py-4 rounded-lg font-semibold text-lg hover:from-cyan-500 hover:to-blue-600 transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-cyan-400/25">
@@ -106,8 +108,27 @@ function showcaseSection() {
   </section>`;
 }
 
+function quizCTASection() {
+  return `
+  <section class="py-20 bg-gray-800/50">
+    <div class="container mx-auto px-4">
+      <div class="text-center mb-8">
+        <h2 class="text-3xl md:text-4xl font-bold mb-4">
+          <span class="text-white">Not sure what to take?</span>
+        </h2>
+        <p class="text-lg text-gray-300 max-w-2xl mx-auto">Take our quick quiz and get a personalized supplement recommendation based on your goals.</p>
+      </div>
+      <div class="flex items-center justify-center">
+        <button data-action="start-quiz" class="bg-gradient-to-r from-cyan-400 to-blue-500 text-white px-8 py-4 rounded-lg font-semibold text-lg hover:from-cyan-500 hover:to-blue-600 transform hover:scale-105 transition-all duration-200 shadow-lg">
+          Start Quiz to see what your body needs
+        </button>
+      </div>
+    </div>
+  </section>`;
+}
+
 export function viewHome() {
-  return categoriesSection() + showcaseSection() + viewQuizWrapper();
+  return categoriesSection() + quizCTASection();
 }
 
 export function mountHome(root) {
@@ -116,10 +137,13 @@ export function mountHome(root) {
     if (!el) return;
     const act = el.getAttribute("data-action");
     if (act==="view-all" || act==="go-catalog") return setView("catalog");
+    if (act==="start-quiz") return setView("quiz");
     if (act && act.startsWith("category-")) {
       const cat = act.replace("category-","");
+      // persist the desired category filter so catalog can read it on mount
+      try { localStorage.setItem('catalog_filters', JSON.stringify({ category: cat })); } catch(e){}
       setView("catalog");
-      // category select happens after catalog renders (handled in main)
+      // category select will be applied when catalog mounts
     }
   });
 
@@ -138,6 +162,5 @@ export function mountHome(root) {
     }
   });
 
-  mountQuiz(root);
   icons();
 }
