@@ -94,8 +94,8 @@ function renderMenuItems(items) {
         card.querySelector('.card-title').textContent = item.name;
         card.querySelector('.card-description').textContent = item.description;
 
-        const regularPrice = item.price;
-        const largePrice = item.price * 1.5;
+        const regularPrice = Number(item.price_regular); 
+        const largePrice = Number(item.price_large);
 
         const sizeOptions = card.querySelectorAll('.size-option');
         const radioButtons = card.querySelectorAll('input[type="radio"]');
@@ -180,8 +180,9 @@ function addToCart(itemId, size) {
         cart[existingItemIndex].quantity++;
     } else {
         const itemToAdd = allMenuItems.find(item => item.id === itemId);
-        const price = size === 'large' ? itemToAdd.price * 1.5 : itemToAdd.price;
-
+    const price = size === 'large' 
+            ? Number(itemToAdd.price_large) 
+            : Number(itemToAdd.price_regular);
         cart.push({
             ...itemToAdd,
             quantity: 1,
