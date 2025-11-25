@@ -70,6 +70,9 @@ export function mountCatalog(root) {
     { key: "creatine",     label: "Creatine" },
     { key: "vitamins",     label: "Vitamins" },
     { key: "hydration",    label: "Hydration" },
+    { key: "mass-gainer",   label: "Mass Gainer" },
+    { key: "fat-burner",    label: "Fat Burner" },
+    { key: "bcaa",        label: "BCAA" },
     { key: "other",        label: "Other" },
   ];
 
