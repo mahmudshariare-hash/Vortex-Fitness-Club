@@ -1,7 +1,7 @@
 const SUPABASE_URL = 'https://ovxxnsrqzdlyzdmubwaw.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im92eHhuc3JxemRseXpkbXVid2F3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM5NzY4MTgsImV4cCI6MjA3OTU1MjgxOH0.uwU9aQGbUO7OEv4HI8Rtq7awANWNubt3yJTSUMZRAJU';
 
-const supabase = self.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const loading = document.getElementById('loading');
 const analyticsContent = document.getElementById('analytics-content');
@@ -40,6 +40,88 @@ let expenses = [];
 let cafeOrderItems = [];
 let menuItemsById = {};
 
+/* ---------- AUTH USING localStorage (from login.js) ---------- */
+
+function requireAuth() {
+  const raw = localStorage.getItem('vortex_user');
+
+  if (!raw) {
+    // Not logged in → go to login page
+    window.location.href = 'index.html';
+    return null;
+  }
+
+  let user;
+  try {
+    user = JSON.parse(raw);
+  } catch (e) {
+    console.error('Failed to parse vortex_user from localStorage', e);
+    localStorage.removeItem('vortex_user');
+    window.location.href = 'index.html';
+    return null;
+  }
+
+  // Restrict owner dashboard to a specific owner
+  // You can change this to `if (user.role !== "owner")` once you store roles correctly.
+  if (user.email !== 'mahin@mail.com') {
+    alert('You are not allowed to access the Owner Dashboard.');
+    window.location.href = 'dashboard.html'; // staff portal
+    return null;
+  }
+
+  return user;
+}
+
+/* ---------------------- UTILS ---------------------- */
+
+
+async function deleteTransactionCascade(table, id) {
+  try {
+    if (table === 'orders') {
+      // 1) Delete payments pointing to this cafe order
+      await supabase.from('payments').delete().eq('order_id', id);
+
+      // 2) Delete order items for this order
+      await supabase.from('order_items').delete().eq('order_id', id);
+
+      // 3) Finally delete the order itself
+      const { error } = await supabase.from('orders').delete().eq('id', id);
+      if (error) throw error;
+    } else if (table === 'supplement_orders') {
+      // 1) Delete payments pointing to this supplement order
+      // column name is inferred from FK "payments_supplement_order_id_fkey"
+      await supabase
+        .from('payments')
+        .delete()
+        .eq('supplement_order_id', id);
+
+      // 2) Delete supplement order items
+      await supabase
+        .from('supplement_order_items')
+        .delete()
+        .eq('order_id', id);
+
+      // 3) Delete the supplement order itself
+      const { error } = await supabase
+        .from('supplement_orders')
+        .delete()
+        .eq('id', id);
+      if (error) throw error;
+    } else if (table === 'expenses') {
+      const { error } = await supabase.from('expenses').delete().eq('id', id);
+      if (error) throw error;
+    } else {
+      throw new Error(`Unsupported table for delete: ${table}`);
+    }
+
+    return { ok: true };
+  } catch (error) {
+    console.error('Failed to delete transaction:', error);
+    return { ok: false, error };
+  }
+}
+
+
 function formatBDT(n) {
   return (
     '৳' +
@@ -50,7 +132,6 @@ function formatBDT(n) {
   );
 }
 
-// normalize payment method names
 function prettyPaymentMethod(m) {
   if (!m) return '—';
   const val = String(m).toLowerCase();
@@ -60,7 +141,6 @@ function prettyPaymentMethod(m) {
   return 'Other';
 }
 
-// sum revenue per payment method for a list of orders
 function getPaymentBreakdown(orders) {
   const totals = { cash: 0, bkash: 0, card: 0, other: 0 };
 
@@ -125,10 +205,12 @@ function initDatePicker() {
   });
 }
 
+/* ---------------------- SUPABASE FETCHES ---------------------- */
+
 async function fetchCafeOrders() {
   const { data, error } = await supabase
     .from('orders')
-    .select('*, payments(*)') // include payments
+    .select('*, payments(*)')
     .eq('status', 'Delivery Complete')
     .gte('created_at', iso(range.from))
     .lte('created_at', iso(range.to))
@@ -169,7 +251,6 @@ async function fetchMenuItems() {
 async function fetchSuppOrders() {
   const { data, error } = await supabase
     .from('supplement_orders')
-    // alias FK just like in the staff dashboard: payments for supplements
     .select('*, payments:payments_supplement_order_id_fkey(*)')
     .eq('status', 'Completed')
     .gte('created_at', iso(range.from))
@@ -236,6 +317,8 @@ async function fetchLowStock() {
   return data || [];
 }
 
+/* ---------------------- RENDER HELPERS ---------------------- */
+
 function renderTransactionsList(target, rows, kind) {
   target.innerHTML = '';
   if (!rows.length) {
@@ -271,7 +354,6 @@ function renderCafeStats() {
   document.getElementById('cafe-total-orders').textContent =
     String(orderCount);
 
-  // Show payment breakdown instead of average order value
   const cafePay = getPaymentBreakdown(cafeOrders);
   let cafeBreakdown =
     `Cash: ${formatBDT(cafePay.cash)} • ` +
@@ -396,11 +478,6 @@ function renderSupplementStats() {
     { sale: 0, cost: 0 }
   );
 
-  // we still compute margin (in case you want it later),
-  // but we don't display it – we show payment breakdown instead
-  const profitMargin =
-    totals.sale > 0 ? ((totals.sale - totals.cost) / totals.sale) * 100 : 0;
-
   document.getElementById('supp-total-sales').textContent =
     formatBDT(totalSales);
   document.getElementById('supp-units-sold').textContent =
@@ -414,7 +491,8 @@ function renderSupplementStats() {
   if (suppPay.other > 0) {
     suppBreakdown += ` • Other: ${formatBDT(suppPay.other)}`;
   }
-  document.getElementById('supp-profit-margin').textContent = suppBreakdown;
+  document.getElementById('supp-profit-margin').textContent =
+    suppBreakdown;
 }
 
 function renderTopSupplements(items, prodMap) {
@@ -525,6 +603,41 @@ function renderExpenses(list) {
   if (expAvgEl) expAvgEl.textContent = formatBDT(expAvg);
 }
 
+/* ---------------------- DELETE HANDLERS ---------------------- */
+
+function attachDeleteHandlers() {
+  const tbody = document.getElementById('all-transactions-body');
+  if (!tbody) return;
+
+  const buttons = tbody.querySelectorAll('.delete-tx-btn');
+
+  buttons.forEach((btn) => {
+    btn.onclick = async () => {
+      const table = btn.dataset.table;
+      const id = btn.dataset.id;
+
+      if (!table || !id) return;
+
+      const confirmed = window.confirm(
+        'Are you sure you want to permanently delete this transaction?'
+      );
+      if (!confirmed) return;
+
+      const { ok, error } = await deleteTransactionCascade(table, id);
+
+      if (!ok) {
+        alert(
+          'Failed to delete this transaction. Please check console for details.'
+        );
+        return;
+      }
+
+      // Refetch everything so UI stays in sync
+      await refresh();
+    };
+  });
+}
+
 function renderAllTransactions() {
   const allTx = [];
 
@@ -536,9 +649,11 @@ function renderAllTransactions() {
     allTx.push({
       date: new Date(order.created_at),
       type: 'Café',
-      customer: methodLabel, // show payment type
+      customer: methodLabel,
       orderId: String(order.id).slice(0, 8).toUpperCase(),
       amount: Number(order.total_amount || 0),
+      table: 'orders',
+      recordId: order.id,
     });
   });
 
@@ -550,9 +665,11 @@ function renderAllTransactions() {
     allTx.push({
       date: new Date(order.created_at),
       type: 'Supplement',
-      customer: methodLabel, // show payment type
+      customer: methodLabel,
       orderId: String(order.id).slice(0, 8).toUpperCase(),
       amount: Number(order.total_amount || 0),
+      table: 'supplement_orders',
+      recordId: order.id,
     });
   });
 
@@ -563,6 +680,8 @@ function renderAllTransactions() {
       customer: exp.category || 'General',
       orderId: exp.description,
       amount: -Number(exp.amount || 0),
+      table: 'expenses',
+      recordId: exp.id,
     });
   });
 
@@ -582,10 +701,21 @@ function renderAllTransactions() {
       <td class="${
         tx.amount < 0 ? 'tx-amount negative' : 'tx-amount'
       }">${formatBDT(Math.abs(tx.amount))}</td>
+      <td>
+        <button
+          class="delete-tx-btn"
+          data-table="${tx.table}"
+          data-id="${tx.recordId}"
+        >
+          Delete
+        </button>
+      </td>
     </tr>
   `
     )
     .join('');
+
+  attachDeleteHandlers();
 
   const totalRevenue =
     cafeOrders.reduce((s, o) => s + Number(o.total_amount || 0), 0) +
@@ -596,18 +726,15 @@ function renderAllTransactions() {
   );
   const netIncome = totalRevenue - totalExpenses;
 
-  document.getElementById('all-tx-count').textContent = String(
-    allTx.length
-  );
+  document.getElementById('all-tx-count').textContent = String(allTx.length);
   document.getElementById('all-tx-revenue').textContent =
     formatBDT(totalRevenue);
   document.getElementById('all-tx-expenses').textContent =
     formatBDT(totalExpenses);
-  document.getElementById('all-tx-net').textContent =
-    formatBDT(netIncome);
+  document.getElementById('all-tx-net').textContent = formatBDT(netIncome);
 
   const searchBox = document.getElementById('tx-search');
-  searchBox.addEventListener('input', (e) => {
+  searchBox.oninput = (e) => {
     const query = e.target.value.toLowerCase();
     const filtered = allTx.filter(
       (tx) =>
@@ -628,11 +755,22 @@ function renderAllTransactions() {
         <td class="${
           tx.amount < 0 ? 'tx-amount negative' : 'tx-amount'
         }">${formatBDT(Math.abs(tx.amount))}</td>
+        <td>
+          <button
+            class="delete-tx-btn"
+            data-table="${tx.table}"
+            data-id="${tx.recordId}"
+          >
+            Delete
+          </button>
+        </td>
       </tr>
     `
       )
       .join('');
-  });
+
+    attachDeleteHandlers();
+  };
 }
 
 function aggregates() {
@@ -688,6 +826,8 @@ function download(filename, text) {
   document.body.removeChild(a);
 }
 
+/* ---------------------- MAIN REFRESH ---------------------- */
+
 async function refresh() {
   loading.classList.add('visible');
   analyticsContent.classList.add('hidden');
@@ -729,6 +869,8 @@ async function refresh() {
 
   if (window.lucide) lucide.createIcons();
 }
+
+/* ---------------------- UI SETUP ---------------------- */
 
 function setupTabs() {
   const tabBtns = document.querySelectorAll('.tab-btn');
@@ -781,9 +923,7 @@ function setupEvents() {
 
   exportSuppBtn.addEventListener('click', () => {
     if (!suppOrders.length)
-      return alert(
-        'No Supplements transactions to export for this period.'
-      );
+      return alert('No Supplements transactions to export for this period.');
     const csv = toCSV(suppOrders);
     download(
       `supp-transactions-${new Date().toISOString().slice(0, 10)}.csv`,
@@ -821,7 +961,12 @@ function setupEvents() {
   setupTabs();
 }
 
+/* ---------------------- BOOTSTRAP ---------------------- */
+
 document.addEventListener('DOMContentLoaded', () => {
+  const user = requireAuth();
+  if (!user) return; // redirected if not allowed
+
   setupEvents();
   refresh();
   if (window.lucide) lucide.createIcons();

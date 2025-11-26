@@ -243,7 +243,6 @@
             <h2><i data-lucide="search"></i> Search & Filter Transactions</h2>
           </div>
           <div class="card-body">
-            <!-- search now focused on payment type + order ID -->
             <input
               type="text"
               id="tx-search"
@@ -256,10 +255,10 @@
                   <tr>
                     <th>Date & Time</th>
                     <th>Type</th>
-                    <!-- header changed from Customer -> Payment Type -->
                     <th>Payment Type</th>
                     <th>Order ID</th>
                     <th>Amount</th>
+                    <th>Action</th> <!-- delete column -->
                   </tr>
                 </thead>
                 <tbody id="all-transactions-body"></tbody>
