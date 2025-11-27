@@ -195,24 +195,38 @@ function populateFilters() {
 /* ---------------------- CART LOGIC ---------------------- */
 
 function addToCart(itemId, size) {
+  // Find the item from the fetched menu list
+  const itemToAdd = allMenuItems.find((i) => i.id == itemId);
+  if (!itemToAdd) return;
+
+  // Check if this item+size already in cart
   const existingItemIndex = cart.findIndex(
-    (item) => item.id === itemId && item.size === size
+    (item) => item.id == itemId && item.size === size
   );
 
   if (existingItemIndex !== -1) {
+    // Increase quantity only
     cart[existingItemIndex].quantity++;
   } else {
-        const regularPrice = Number(item.price_regular ?? item.price);
-    const largePrice = Number(item.price_large ?? item.price);
+    // Use price from DB - NO MULTIPLIER
+    const regularPrice = Number(itemToAdd.price_regular ?? itemToAdd.price);
+    const largePrice = Number(itemToAdd.price_large ?? itemToAdd.price);
+
+    const price = size === "large" ? largePrice : regularPrice;
+
     cart.push({
-      ...itemToAdd,
+      id: itemToAdd.id,
+      name: itemToAdd.name,
+      image_url: itemToAdd.image_url,
       quantity: 1,
       size: size,
       price: price,
     });
   }
+
   updateCart();
 }
+
 
 function updateCartQuantity(itemId, size, newQuantity) {
   if (newQuantity <= 0) {
