@@ -717,9 +717,32 @@ function renderAllTransactions() {
 
   attachDeleteHandlers();
 
-  const totalRevenue =
-    cafeOrders.reduce((s, o) => s + Number(o.total_amount || 0), 0) +
-    suppOrders.reduce((s, o) => s + Number(o.total_amount || 0), 0);
+ // Calculate Cafe Revenue
+const cafeRevenue = cafeOrders.reduce(
+  (s, o) => s + Number(o.total_amount || 0), 
+  0
+);
+
+// Supplement Sales & Cost
+const suppTotals = suppItems.reduce(
+  (acc, it) => {
+    const id = it.supplement_product_id;
+    const qty = Number(it.quantity || 0);
+    const sale = Number(it.price_at_order || 0) * qty;
+    const cost = Number(supplementProductsById[id]?.buying_price || 0) * qty;
+    acc.sale += sale;
+    acc.cost += cost;
+    return acc;
+  },
+  { sale: 0, cost: 0 }
+);
+
+// Supplement Profit
+const suppProfit = suppTotals.sale - suppTotals.cost;
+
+// FINAL TOTAL REVENUE FORMULA
+const totalRevenue = cafeRevenue + suppProfit;
+
   const totalExpenses = expenses.reduce(
     (s, e) => s + Number(e.amount || 0),
     0
