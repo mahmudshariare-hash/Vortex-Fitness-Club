@@ -57,38 +57,23 @@ body {
 .nav-content { display: flex; justify-content: space-between; align-items: center; }
 .logo { font-size: 1.5rem; font-weight: 800; color: var(--text-main); text-decoration: none; display: flex; align-items: center; gap: 8px; }
 .logo span { color: var(--primary); }
-.cart-icon { position: relative; cursor: pointer; font-size: 1.6rem; color: var(--text-main); }
-#cart-count {
-    position: absolute; top: -5px; right: -8px;
-    background: var(--primary); color: white;
-    font-size: 0.7rem; padding: 2px 6px; border-radius: 50%;
-}
-/* style.css */
 
-/* ... existing navbar styles ... */
-
-.nav-content { display: flex; justify-content: space-between; align-items: center; }
-
-/* FIX: Changed selector to match HTML and increased size */
+/* Cart Icon Wrapper (Fixed Size & Position) */
 .cart-icon-wrapper { 
     position: relative; 
     cursor: pointer; 
-    font-size: 2rem; /* Increased from 1.6rem to 2rem for bigger icon */
+    font-size: 2rem; 
     color: var(--text-main); 
     display: flex;
     align-items: center;
     transition: color 0.2s;
 }
+.cart-icon-wrapper:hover { color: var(--primary); }
 
-.cart-icon-wrapper:hover {
-    color: var(--primary);
-}
-
-/* FIX: Adjusted badge position and added border for better visibility */
 #cart-count {
     position: absolute; 
-    top: -8px;        /* Moved slightly higher */
-    right: -12px;     /* Moved slightly more right */
+    top: -8px; 
+    right: -12px;
     background: var(--primary); 
     color: white;
     font-size: 0.75rem; 
@@ -97,11 +82,12 @@ body {
     border-radius: 50%;
     min-width: 18px;
     text-align: center;
-    border: 2px solid var(--bg-card); /* Adds a white border to separate it from the icon */
+    border: 2px solid var(--bg-card);
 }
+
 /* Filter Bar (Top) */
 .filter-container {
-    background: #111827; /* Dark background for filter area matching image */
+    background: #111827;
     color: white;
     padding: 20px;
     border-radius: var(--radius);
@@ -180,8 +166,8 @@ body {
     padding: 5px 10px; font-size: 0.75rem; font-weight: bold;
     border-radius: 20px; color: white;
 }
-.badge.out { background: #8e8e8e; } /* Grey for out */
-.badge.low { background: #ef4444; } /* Red for 1 left */
+.badge.out { background: #8e8e8e; }
+.badge.low { background: #ef4444; }
 
 .brand-name { color: var(--text-muted); font-size: 0.8rem; }
 .prod-title { font-size: 1.1rem; font-weight: 700; color: var(--text-main); margin-bottom: 4px; }
@@ -209,14 +195,16 @@ body {
 .add-btn:hover { background: var(--primary-hover); }
 .add-btn.disabled { background: #ddd; color: #888; cursor: not-allowed; }
 
-/* Cart & Modal Styles (Clean Light) */
+/* Cart & Modal Styles */
 .cart-sidebar {
     position: fixed; top: 0; right: -400px; width: 380px; height: 100vh;
     background: white; z-index: 200; transition: 0.3s;
     box-shadow: -5px 0 20px rgba(0,0,0,0.1);
     display: flex; flex-direction: column;
 }
+/* When active, bring it to right: 0 */
 .cart-sidebar.active { right: 0; }
+
 .cart-header { padding: 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; }
 .cart-items { flex: 1; overflow-y: auto; padding: 20px; }
 .cart-item { display: flex; gap: 15px; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #f0f0f0; }
@@ -228,11 +216,12 @@ body {
 .form-group { margin-bottom: 15px; }
 .form-group input, .form-group textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; background: var(--bg-input); font-family: inherit; }
 .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
-/* Product Detail Modal Specifics */
+
+/* Product Details Modal Specifics */
 .product-details-modal {
-    max-width: 800px; /* Wider than the checkout modal */
+    max-width: 800px;
     width: 95%;
-    padding: 0; /* Reset padding for custom layout */
+    padding: 0;
     overflow: hidden;
     position: relative;
 }
@@ -255,13 +244,8 @@ body {
 }
 .close-modal-btn:hover { background: #ff4d4d; color: white; }
 
-.product-modal-body {
-    display: flex;
-    flex-direction: row;
-    height: 100%;
-}
+.product-modal-body { display: flex; flex-direction: row; height: 100%; }
 
-/* Left Side (Image) */
 .pm-image-container {
     width: 45%;
     background: #f8f9fa;
@@ -270,51 +254,33 @@ body {
     justify-content: center;
     padding: 30px;
 }
-.pm-image-container img {
-    max-width: 100%;
-    max-height: 350px;
-    object-fit: contain;
-}
+.pm-image-container img { max-width: 100%; max-height: 350px; object-fit: contain; }
 
-/* Right Side (Info) */
-.pm-info {
-    width: 55%;
-    padding: 40px 30px;
-    display: flex;
-    flex-direction: column;
-}
-
+.pm-info { width: 55%; padding: 40px 30px; display: flex; flex-direction: column; }
 .pm-brand { color: var(--primary); font-weight: 700; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; }
 #pm-title { font-size: 1.8rem; margin-bottom: 10px; line-height: 1.2; }
 .pm-cat-badge { display: inline-block; background: #eee; padding: 4px 10px; border-radius: 4px; font-size: 0.8rem; color: #555; margin-bottom: 20px; align-self: flex-start; }
-
 .pm-description-box { flex: 1; margin-bottom: 25px; overflow-y: auto; max-height: 200px; }
 .pm-description-box h4 { font-size: 0.9rem; color: #888; margin-bottom: 5px; text-transform: uppercase; }
 .pm-description-box p { color: #444; line-height: 1.6; font-size: 0.95rem; white-space: pre-wrap; }
-
 .pm-footer { display: flex; align-items: center; justify-content: space-between; border-top: 1px solid #eee; padding-top: 20px; }
 .pm-price { font-size: 1.8rem; font-weight: 800; color: var(--text-main); }
 
-/* Responsive Mobile */
+/* Toast */
+.toast { position: fixed; bottom: 20px; right: 20px; background: #1a1a1a; color: white; padding: 12px 24px; border-radius: 8px; z-index: 400; }
+
+/* MEDIA QUERIES (FIXED FOR MOBILE) */
 @media (max-width: 768px) {
+    .filter-row { flex-direction: column; gap: 10px; }
+    
+    .cart-sidebar { 
+        width: 100%; 
+        /* Important: -100% hides it completely regardless of screen width */
+        right: -100%; 
+    }
+    
     .product-modal-body { flex-direction: column; }
     .pm-image-container, .pm-info { width: 100%; }
     .pm-image-container { height: 250px; }
     .product-details-modal { height: 90vh; overflow-y: auto; }
-}
-/* Toast */
-.toast { position: fixed; bottom: 20px; right: 20px; background: #1a1a1a; color: white; padding: 12px 24px; border-radius: 8px; z-index: 400; }
-
-/* style.css - Bottom of file */
-
-@media (max-width: 768px) {
-    .filter-row { 
-        flex-direction: column; 
-        gap: 10px; 
-    }
-    
-    .cart-sidebar { 
-        width: 100%; 
-        right: -100%; /* FIX: Pushes the full width sidebar completely off-screen */
-    }
 }
