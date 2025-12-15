@@ -228,7 +228,7 @@ const app = {
         app.updateCartUI();
     },
 
-    updateCartUI: () => {
+   updateCartUI: () => {
         const container = document.getElementById('cart-items');
         document.getElementById('cart-count').innerText = state.cart.reduce((s, i) => s + i.qty, 0);
         const total = state.cart.reduce((s, i) => s + (i.price * i.qty), 0);
@@ -246,7 +246,10 @@ const app = {
                     <div style="font-weight:bold; font-size:0.9rem;">${item.name}</div>
                     <div style="color:var(--primary); font-weight:bold;">৳${item.price} x ${item.qty}</div>
                 </div>
-                <button onclick="app.removeFromCart('${item.id}')" style="background:none; border:none; color:red; cursor:pointer;"><i class="ph ph-trash"></i></button>
+                <button onclick="app.removeFromCart('${item.id}')" 
+                    style="background: #fee2e2; border: none; color: #dc2626; cursor: pointer; width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; transition: 0.2s;">
+                    <i class="ph ph-trash"></i>
+                </button>
             </div>
         `).join('');
     },

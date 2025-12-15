@@ -56,7 +56,7 @@ body {
 }
 .nav-content { display: flex; justify-content: space-between; align-items: center; }
 .logo { font-size: 1.5rem; font-weight: 800; color: var(--text-main); text-decoration: none; display: flex; align-items: center; gap: 8px; }
-.logo span { color: var(--primary); }
+.logo span { color: red; }
 
 /* Cart Icon Wrapper (Fixed Size & Position) */
 .cart-icon-wrapper { 
@@ -200,16 +200,34 @@ body {
     position: fixed; top: 0; right: -400px; width: 380px; height: 100vh;
     background: white; z-index: 200; transition: 0.3s;
     box-shadow: -5px 0 20px rgba(0,0,0,0.1);
-    display: flex; flex-direction: column;
+    display: flex; 
+    flex-direction: column;
+    justify-content: flex-start; /* FIX: Pack items at the top */
 }
 /* When active, bring it to right: 0 */
 .cart-sidebar.active { right: 0; }
 
-.cart-header { padding: 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; }
-.cart-items { flex: 1; overflow-y: auto; padding: 20px; }
+.cart-header { 
+    padding: 20px; 
+    border-bottom: 1px solid var(--border); 
+    display: flex; 
+    justify-content: space-between;
+    flex-shrink: 0; /* FIX: Prevent shrinking */
+}
+.cart-items { 
+    flex: 0 1 auto; /* FIX: Changed from 'flex: 1' */
+    overflow-y: auto; 
+    padding: 20px; 
+}
 .cart-item { display: flex; gap: 15px; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #f0f0f0; }
 .cart-item img { width: 60px; height: 60px; object-fit: contain; border: 1px solid #eee; border-radius: 8px; }
-.cart-footer { padding: 20px; background: #f9fafb; border-top: 1px solid var(--border); }
+.cart-footer { 
+    padding: 20px; 
+    background: #f9fafb; 
+    border-top: 1px solid var(--border); 
+    flex-shrink: 0; /* FIX: Prevent shrinking */
+    margin-bottom: auto; /* Optional: ensures it stays after items */
+}
 
 .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 300; display: flex; justify-content: center; align-items: center; }
 .modal-content { background: white; padding: 30px; border-radius: var(--radius); width: 90%; max-width: 500px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
