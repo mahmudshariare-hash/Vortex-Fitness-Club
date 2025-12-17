@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vortex Supplements | Store</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💪</text></svg>">
+    
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 </head>
@@ -39,8 +41,7 @@
             </button>
         </div>
         
-        <div class="cart-items" id="cart-items">
-            </div>
+        <div class="cart-items" id="cart-items"></div>
 
         <div class="cart-footer">
             <div class="cart-total">
@@ -82,35 +83,37 @@
     </div>
 
     <div id="toast" class="toast hidden">Added to cart</div>
-<div id="product-modal" class="modal hidden">
-    <div class="modal-content product-details-modal">
-        <button onclick="app.closeProductModal()" class="close-modal-btn">
-            <i class="ph-bold ph-x"></i>
-        </button>
-        
-        <div class="product-modal-body">
-            <div class="pm-image-container">
-                <img id="pm-img" src="" alt="Product Image">
-            </div>
-
-            <div class="pm-info">
-                <div id="pm-brand" class="pm-brand"></div>
-                <h2 id="pm-title"></h2>
-                <div id="pm-cat" class="pm-cat-badge"></div>
-                
-                <div class="pm-description-box">
-                    <h4>Description</h4>
-                    <p id="pm-desc"></p>
+    
+    <div id="product-modal" class="modal hidden">
+        <div class="modal-content product-details-modal">
+            <button onclick="app.closeProductModal()" class="close-modal-btn">
+                <i class="ph-bold ph-x"></i>
+            </button>
+            
+            <div class="product-modal-body">
+                <div class="pm-image-container">
+                    <img id="pm-img" src="" alt="Product Image">
                 </div>
 
-                <div class="pm-footer">
-                    <div id="pm-price" class="pm-price"></div>
-                    <div id="pm-action-area"></div>
+                <div class="pm-info">
+                    <div id="pm-brand" class="pm-brand"></div>
+                    <h2 id="pm-title"></h2>
+                    <div id="pm-cat" class="pm-cat-badge"></div>
+                    
+                    <div class="pm-description-box">
+                        <h4>Description</h4>
+                        <p id="pm-desc"></p>
+                    </div>
+
+                    <div class="pm-footer">
+                        <div id="pm-price" class="pm-price"></div>
+                        <div id="pm-action-area"></div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
+
     <script src="app.js"></script>
 </body>
 </html>

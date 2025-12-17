@@ -2,15 +2,16 @@
 const SUPABASE_URL = 'https://ovxxnsrqzdlyzdmubwaw.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im92eHhuc3JxemRseXpkbXVid2F3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM5NzY4MTgsImV4cCI6MjA3OTU1MjgxOH0.uwU9aQGbUO7OEv4HI8Rtq7awANWNubt3yJTSUMZRAJU';
 
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// FIX: Renamed variable to 'supabaseClient' to avoid conflict
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const state = {
     products: [],
     cart: JSON.parse(localStorage.getItem('vortex_cart')) || [],
     filters: {
         category: 'All',
-        sort: 'default', // default, low-high, high-low
-        availability: 'any' // any, in-stock, out-of-stock
+        sort: 'default',
+        availability: 'any'
     }
 };
 
@@ -22,8 +23,8 @@ const app = {
     },
 
     fetchProducts: async () => {
-        // Fetch all products, we handle availability filtering in JS
-        const { data, error } = await supabase
+        // Updated to use supabaseClient
+        const { data, error } = await supabaseClient
             .from('supplement_products')
             .select('*');
 
@@ -35,15 +36,11 @@ const app = {
         }
     },
 
-    // Router handles just the main view for now
     router: (view) => {
         if (view === 'home') app.renderShop(document.getElementById('app'));
     },
 
-    // --- RENDER LOGIC ---
-
     renderShop: (container) => {
-        // Unique Categories
         const categories = ['All', ...new Set(state.products.map(p => p.category))];
 
         container.innerHTML = `
@@ -91,26 +88,22 @@ const app = {
         const grid = document.getElementById('shop-grid');
         let filtered = [...state.products];
 
-        // 1. Filter by Category
         if (state.filters.category !== 'All') {
             filtered = filtered.filter(p => p.category === state.filters.category);
         }
 
-        // 2. Filter by Availability
         if (state.filters.availability === 'in-stock') {
             filtered = filtered.filter(p => p.stock > 0);
         } else if (state.filters.availability === 'out-of-stock') {
             filtered = filtered.filter(p => p.stock <= 0);
         }
 
-        // 3. Sort
         if (state.filters.sort === 'low-high') {
             filtered.sort((a, b) => a.price - b.price);
         } else if (state.filters.sort === 'high-low') {
             filtered.sort((a, b) => b.price - a.price);
         }
 
-        // Render Cards
         grid.innerHTML = filtered.map(p => {
             const isOutOfStock = p.stock <= 0;
             const isLowStock = p.stock === 1;
@@ -142,8 +135,6 @@ const app = {
         }).join('');
     },
 
-    // --- ACTION HANDLERS ---
-
     updateFilters: (key, value) => {
         state.filters[key] = value;
         app.renderGrid();
@@ -151,17 +142,13 @@ const app = {
 
     setCategory: (cat) => {
         state.filters.category = cat;
-        // Re-render whole shop to update Pill active states
         app.renderShop(document.getElementById('app')); 
     },
-
-    // --- PRODUCT MODAL ---
 
     openProductModal: (id) => {
         const product = state.products.find(p => p.id === id);
         if (!product) return;
 
-        // 1. Populate Data
         document.getElementById('pm-img').src = product.image_url || 'https://placehold.co/300';
         document.getElementById('pm-title').innerText = product.name;
         document.getElementById('pm-brand').innerText = product.brand || 'Vortex';
@@ -169,18 +156,15 @@ const app = {
         document.getElementById('pm-desc').innerText = product.description || 'No description available for this product.';
         document.getElementById('pm-price').innerText = '৳' + Number(product.price).toLocaleString();
 
-        // 2. Handle Add to Cart Button Logic (Stock check)
         const actionArea = document.getElementById('pm-action-area');
         const isOutOfStock = product.stock <= 0;
 
         if (isOutOfStock) {
             actionArea.innerHTML = `<button class="btn btn-secondary" disabled>Out of Stock</button>`;
         } else {
-            // We use a wrapper function in onclick to pass the ID correctly
             actionArea.innerHTML = `<button class="btn btn-primary" onclick="app.addToCart('${product.id}'); app.closeProductModal();">Add to Cart</button>`;
         }
 
-        // 3. Show Modal
         document.getElementById('product-modal').classList.remove('hidden');
     },
 
@@ -188,30 +172,25 @@ const app = {
         document.getElementById('product-modal').classList.add('hidden');
     },
 
-    // --- CART & DB LOGIC ---
-
     toggleCart: () => {
         document.getElementById('cart-sidebar').classList.toggle('active');
         document.getElementById('overlay').classList.toggle('active');
     },
 
-  addToCart: (productId) => {
+    addToCart: (productId) => {
         const product = state.products.find(p => p.id === productId);
         const existing = state.cart.find(i => i.id === productId);
         
-        // --- NEW VALIDATION ---
         const currentQtyInCart = existing ? existing.qty : 0;
         
         if (currentQtyInCart + 1 > product.stock) {
             alert(`Sorry, we only have ${product.stock} of these in stock!`);
             return; 
         }
-        // ----------------------
 
         if (existing) {
             existing.qty += 1;
         } else {
-            // Store the CURRENT stock in the cart item to help with calculations later
             state.cart.push({ ...product, qty: 1 });
         }
         app.saveCart();
@@ -228,7 +207,7 @@ const app = {
         app.updateCartUI();
     },
 
-   updateCartUI: () => {
+    updateCartUI: () => {
         const container = document.getElementById('cart-items');
         document.getElementById('cart-count').innerText = state.cart.reduce((s, i) => s + i.qty, 0);
         const total = state.cart.reduce((s, i) => s + (i.price * i.qty), 0);
@@ -260,8 +239,6 @@ const app = {
         setTimeout(() => t.classList.add('hidden'), 2000);
     },
 
-    // --- CHECKOUT (DB WRITE) ---
-
     checkoutModal: () => {
         if (state.cart.length === 0) return alert("Your cart is empty.");
         document.getElementById('checkout-modal').classList.remove('hidden');
@@ -286,8 +263,8 @@ const app = {
         };
 
         try {
-            // 1. Create Order
-            const { data: order, error: orderErr } = await supabase
+            // Updated to use supabaseClient
+            const { data: order, error: orderErr } = await supabaseClient
                 .from('supplement_orders')
                 .insert([{
                     customer_name: form.name,
@@ -301,7 +278,6 @@ const app = {
 
             if (orderErr) throw orderErr;
 
-            // 2. Create Order Items
             const items = state.cart.map(item => ({
                 order_id: order.id,
                 supplement_product_id: item.id,
@@ -310,32 +286,29 @@ const app = {
                 item_name: item.name
             }));
 
-            const { error: itemsErr } = await supabase
+            // Updated to use supabaseClient
+            const { error: itemsErr } = await supabaseClient
                 .from('supplement_order_items')
                 .insert(items);
 
             if (itemsErr) throw itemsErr;
 
-            // --- NEW STEP 3: UPDATE INVENTORY ---
-            // Decrement stock for each item bought
+            // Updated to use supabaseClient
             for (const item of state.cart) {
                 const newStock = item.stock - item.qty;
-                const { error: stockErr } = await supabase
+                const { error: stockErr } = await supabaseClient
                     .from('supplement_products')
                     .update({ stock: newStock })
                     .eq('id', item.id);
                 
                 if (stockErr) console.error('Error updating stock for:', item.name, stockErr);
             }
-            // ------------------------------------
 
-            // Success
             alert('Order Placed Successfully!');
             state.cart = [];
             app.saveCart();
             app.closeModal();
             
-            // Refresh products to show new stock levels immediately
             await app.fetchProducts();
             app.renderShop(document.getElementById('app'));
 
