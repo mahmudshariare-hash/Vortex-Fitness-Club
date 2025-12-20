@@ -1,7 +1,8 @@
 const SUPABASE_URL = 'https://ovxxnsrqzdlyzdmubwaw.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im92eHhuc3JxemRseXpkbXVid2F3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM5NzY4MTgsImV4cCI6MjA3OTU1MjgxOH0.uwU9aQGbUO7OEv4HI8Rtq7awANWNubt3yJTSUMZRAJU';
 
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// CHANGED: Renamed to supabaseClient to avoid conflict
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const loading = document.getElementById('loading');
 const analyticsContent = document.getElementById('analytics-content');
@@ -79,36 +80,37 @@ async function deleteTransactionCascade(table, id) {
   try {
     if (table === 'orders') {
       // 1) Delete payments pointing to this cafe order
-      await supabase.from('payments').delete().eq('order_id', id);
+      // UPDATED: supabase -> supabaseClient
+      await supabaseClient.from('payments').delete().eq('order_id', id);
 
       // 2) Delete order items for this order
-      await supabase.from('order_items').delete().eq('order_id', id);
+      await supabaseClient.from('order_items').delete().eq('order_id', id);
 
       // 3) Finally delete the order itself
-      const { error } = await supabase.from('orders').delete().eq('id', id);
+      const { error } = await supabaseClient.from('orders').delete().eq('id', id);
       if (error) throw error;
     } else if (table === 'supplement_orders') {
       // 1) Delete payments pointing to this supplement order
       // column name is inferred from FK "payments_supplement_order_id_fkey"
-      await supabase
+      await supabaseClient
         .from('payments')
         .delete()
         .eq('supplement_order_id', id);
 
       // 2) Delete supplement order items
-      await supabase
+      await supabaseClient
         .from('supplement_order_items')
         .delete()
         .eq('order_id', id);
 
       // 3) Delete the supplement order itself
-      const { error } = await supabase
+      const { error } = await supabaseClient
         .from('supplement_orders')
         .delete()
         .eq('id', id);
       if (error) throw error;
     } else if (table === 'expenses') {
-      const { error } = await supabase.from('expenses').delete().eq('id', id);
+      const { error } = await supabaseClient.from('expenses').delete().eq('id', id);
       if (error) throw error;
     } else {
       throw new Error(`Unsupported table for delete: ${table}`);
@@ -208,7 +210,8 @@ function initDatePicker() {
 /* ---------------------- SUPABASE FETCHES ---------------------- */
 
 async function fetchCafeOrders() {
-  const { data, error } = await supabase
+  // UPDATED: supabase -> supabaseClient
+  const { data, error } = await supabaseClient
     .from('orders')
     .select('*, payments(*)')
     .eq('status', 'Delivery Complete')
@@ -224,7 +227,8 @@ async function fetchCafeOrders() {
 
 async function fetchCafeOrderItems(orderIds) {
   if (!orderIds.length) return [];
-  const { data, error } = await supabase
+  // UPDATED: supabase -> supabaseClient
+  const { data, error } = await supabaseClient
     .from('order_items')
     .select('order_id,menu_item_id,quantity,price_at_order')
     .in('order_id', orderIds);
@@ -236,7 +240,8 @@ async function fetchCafeOrderItems(orderIds) {
 }
 
 async function fetchMenuItems() {
-  const { data, error } = await supabase
+  // UPDATED: supabase -> supabaseClient
+  const { data, error } = await supabaseClient
     .from('menu_items')
     .select('id,name,category');
   if (error) {
@@ -249,7 +254,8 @@ async function fetchMenuItems() {
 }
 
 async function fetchSuppOrders() {
-  const { data, error } = await supabase
+  // UPDATED: supabase -> supabaseClient
+  const { data, error } = await supabaseClient
     .from('supplement_orders')
     .select('*, payments:payments_supplement_order_id_fkey(*)')
     .eq('status', 'Completed')
@@ -265,7 +271,8 @@ async function fetchSuppOrders() {
 
 async function fetchSuppOrderItemsFor(ids) {
   if (!ids.length) return [];
-  const { data, error } = await supabase
+  // UPDATED: supabase -> supabaseClient
+  const { data, error } = await supabaseClient
     .from('supplement_order_items')
     .select('order_id,supplement_product_id,quantity,price_at_order')
     .in('order_id', ids);
@@ -277,7 +284,8 @@ async function fetchSuppOrderItemsFor(ids) {
 }
 
 async function fetchSuppProductsMap() {
-  const { data, error } = await supabase
+  // UPDATED: supabase -> supabaseClient
+  const { data, error } = await supabaseClient
     .from('supplement_products')
     .select('id,name,brand,buying_price,stock');
   if (error) {
@@ -290,7 +298,8 @@ async function fetchSuppProductsMap() {
 }
 
 async function fetchExpenses() {
-  const { data, error } = await supabase
+  // UPDATED: supabase -> supabaseClient
+  const { data, error } = await supabaseClient
     .from('expenses')
     .select('*')
     .gte('created_at', iso(range.from))
@@ -304,7 +313,8 @@ async function fetchExpenses() {
 }
 
 async function fetchLowStock() {
-  const { data, error } = await supabase
+  // UPDATED: supabase -> supabaseClient
+  const { data, error } = await supabaseClient
     .from('supplement_products')
     .select('id,name,brand,stock')
     .lte('stock', 5)
@@ -963,7 +973,8 @@ function setupEvents() {
     };
     if (!payload.description || isNaN(payload.amount)) return;
 
-    const { error } = await supabase.from('expenses').insert([payload]);
+    // UPDATED: supabase -> supabaseClient
+    const { error } = await supabaseClient.from('expenses').insert([payload]);
     if (error) {
       console.error(error);
       alert('Failed to add expense.');

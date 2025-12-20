@@ -1,7 +1,8 @@
 const SUPABASE_URL = 'https://ovxxnsrqzdlyzdmubwaw.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im92eHhuc3JxemRseXpkbXVid2F3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM5NzY4MTgsImV4cCI6MjA3OTU1MjgxOH0.uwU9aQGbUO7OEv4HI8Rtq7awANWNubt3yJTSUMZRAJU';
 
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// CHANGED: Renamed variable to 'supabaseClient' to avoid conflict with window.supabase
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 let allMenuItems = [];
 const categories = ['All', 'Supplements','Smoothies', 'Coffee', 'Juice','Shake','Raw Juice' ];
@@ -47,7 +48,8 @@ async function fetchMenuItems() {
   menuGrid.classList.add('hidden');
   noItemsMessage.classList.add('hidden');
 
-  const { data, error } = await supabase
+  // UPDATED: supabase -> supabaseClient
+  const { data, error } = await supabaseClient
     .from('menu_items')
     .select('*')
     .eq('available', true)
@@ -337,7 +339,8 @@ function showCheckoutForm() {
 
 async function placeOrder(orderDetails) {
   // 1) Create order in DB
-  const { data: orderData, error: orderError } = await supabase
+  // UPDATED: supabase -> supabaseClient
+  const { data: orderData, error: orderError } = await supabaseClient
     .from('orders')
     .insert([
       {
@@ -368,7 +371,8 @@ async function placeOrder(orderDetails) {
       .toUpperCase()}${cartItem.size.slice(1)})`,
   }));
 
-  const { error: itemsError } = await supabase
+  // UPDATED: supabase -> supabaseClient
+  const { error: itemsError } = await supabaseClient
     .from('order_items')
     .insert(itemsToInsert);
 
@@ -399,14 +403,16 @@ function showOrderTracking(order) {
 
   // clean up any previous subscription
   if (window.currentTrackingChannel) {
-    supabase.removeChannel(window.currentTrackingChannel);
+    // UPDATED: supabase -> supabaseClient
+    supabaseClient.removeChannel(window.currentTrackingChannel);
     window.currentTrackingChannel = null;
   }
 
   // initial state: order received
   renderOrderTracking(order, 'received');
 
-  const channel = supabase
+  // UPDATED: supabase -> supabaseClient
+  const channel = supabaseClient
     .channel(`order-tracking-${order.id}`)
     // when staff records payment for this order
     .on(
@@ -518,7 +524,8 @@ function renderOrderTracking(order, status) {
     closeBtn.addEventListener('click', () => {
       orderTrackingModal.classList.add('hidden');
       if (window.currentTrackingChannel) {
-        supabase.removeChannel(window.currentTrackingChannel);
+        // UPDATED: supabase -> supabaseClient
+        supabaseClient.removeChannel(window.currentTrackingChannel);
         window.currentTrackingChannel = null;
       }
     });
