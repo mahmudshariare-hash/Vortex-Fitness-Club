@@ -196,6 +196,9 @@ function applyQuickRange(code) {
     const from = new Date(now);
     from.setDate(from.getDate() - 29);
     range = { from: startOfDay(from), to: endOfDay(now) };
+  } else if (code === 'all') {
+    // Set to null so we know to fetch EVERYTHING
+    range = { from: null, to: null };
   }
 }
 
@@ -220,13 +223,18 @@ function initDatePicker() {
 /* ---------------------- SUPABASE FETCHES ---------------------- */
 
 async function fetchCafeOrders() {
-  const { data, error } = await supabaseClient
+  let query = supabaseClient
     .from('orders')
     .select('*, payments(*)')
-    .eq('status', 'Delivery Complete')
-    .gte('created_at', iso(range.from))
-    .lte('created_at', iso(range.to))
-    .order('created_at', { ascending: false });
+    .eq('status', 'Delivery Complete');
+
+  // Only filter by date if range is NOT All Time
+  if (range.from && range.to) {
+    query = query.gte('created_at', iso(range.from))
+                 .lte('created_at', iso(range.to));
+  }
+
+  const { data, error } = await query.order('created_at', { ascending: false });
   if (error) return [];
   return data || [];
 }
@@ -252,13 +260,18 @@ async function fetchMenuItems() {
 }
 
 async function fetchSuppOrders() {
-  const { data, error } = await supabaseClient
+  let query = supabaseClient
     .from('supplement_orders')
     .select('*, payments:payments_supplement_order_id_fkey(*)')
-    .eq('status', 'Completed')
-    .gte('created_at', iso(range.from))
-    .lte('created_at', iso(range.to))
-    .order('created_at', { ascending: false });
+    .eq('status', 'Completed');
+
+  // Only filter by date if range is NOT All Time
+  if (range.from && range.to) {
+    query = query.gte('created_at', iso(range.from))
+                 .lte('created_at', iso(range.to));
+  }
+
+  const { data, error } = await query.order('created_at', { ascending: false });
   if (error) return [];
   return data || [];
 }
@@ -285,12 +298,17 @@ async function fetchSuppProductsMap() {
 }
 
 async function fetchExpenses() {
-  const { data, error } = await supabaseClient
+  let query = supabaseClient
     .from('expenses')
-    .select('*')
-    .gte('created_at', iso(range.from))
-    .lte('created_at', iso(range.to))
-    .order('created_at', { ascending: false });
+    .select('*');
+
+  // Only filter by date if range is NOT All Time
+  if (range.from && range.to) {
+    query = query.gte('created_at', iso(range.from))
+                 .lte('created_at', iso(range.to));
+  }
+
+  const { data, error } = await query.order('created_at', { ascending: false });
   if (error) return [];
   return data || [];
 }
@@ -334,7 +352,6 @@ function renderCafeStats() {
   const totalSales = cafeOrders.reduce((s, o) => s + Number(o.total_amount || 0), 0);
   
   // 2. Calculate Café Specific Expenses
-  // Filter expenses where category is exactly 'Cafe'
   const cafeExpenses = expenses
     .filter(e => e.category === 'Cafe')
     .reduce((sum, e) => sum + Number(e.amount || 0), 0);
@@ -342,24 +359,33 @@ function renderCafeStats() {
   // 3. Calculate Profit
   const cafeProfit = totalSales - cafeExpenses;
 
-  // 4. Update DOM Elements
+  // --- CRITICAL UPDATE: Update the Top Dashboard Cards ---
+  const topRevEl = document.getElementById('top-cafe-revenue');
+  const topProfitEl = document.getElementById('top-cafe-profit');
+
+  if (topRevEl) topRevEl.textContent = formatBDT(totalSales);
+  if (topProfitEl) {
+    topProfitEl.textContent = formatBDT(cafeProfit);
+    topProfitEl.style.color = cafeProfit < 0 ? '#ef4444' : ''; // Red if loss
+  }
+  // -------------------------------------------------------
+
+  // 4. Update Internal Tab Elements (Keep this so tabs still work)
   document.getElementById('cafe-total-sales').textContent = formatBDT(totalSales);
   
-  // Update the new Profit Card (Middle Card)
   const profitEl = document.getElementById('cafe-net-profit');
   if (profitEl) {
       profitEl.textContent = formatBDT(cafeProfit);
-      // Optional: Make text red if negative
       profitEl.style.color = cafeProfit < 0 ? '#ef4444' : '';
   }
 
-  // 5. Payment Breakdown (Right Card - Kept as requested)
+  // 5. Payment Breakdown
   const cafePay = getPaymentBreakdown(cafeOrders);
   let cafeBreakdown = `Cash: ${formatBDT(cafePay.cash)} • bKash: ${formatBDT(cafePay.bkash)} • Card: ${formatBDT(cafePay.card)}`;
   if (cafePay.other > 0) cafeBreakdown += ` • Other: ${formatBDT(cafePay.other)}`;
   document.getElementById('cafe-avg-order').textContent = cafeBreakdown;
 
-  // --- (Rest of the function for Most/Least sold items remains exactly the same) ---
+  // Render Lists (Most/Least sold logic remains unchanged)
   const itemStats = {};
   cafeOrderItems.forEach((item) => {
     const menuId = item.menu_item_id;
@@ -372,10 +398,10 @@ function renderCafeStats() {
   const mostSold = sortedByRevenue.slice(0, 5);
   const leastSold = sortedByRevenue.slice(-5).reverse();
 
-  const mostSoldEl = document.getElementById('cafe-most-sold');
-  mostSoldEl.innerHTML = mostSold.length ? mostSold.map(([id, stats]) => {
-        const menuItem = menuItemsById[id] || {};
-        return `
+  // Helper to render product card
+  const renderProdCard = ([id, stats]) => {
+     const menuItem = menuItemsById[id] || {};
+     return `
         <div class="product-card">
           <div class="product-info">
             <h3>${menuItem.name || 'Unknown Item'}</h3>
@@ -386,26 +412,12 @@ function renderCafeStats() {
             <p class="product-stat-label">${stats.quantity} sold</p>
           </div>
         </div>`;
-      }).join('') : '<p class="empty-message">No sales data available.</p>';
+  };
 
-  const leastSoldEl = document.getElementById('cafe-least-sold');
-  leastSoldEl.innerHTML = leastSold.length ? leastSold.map(([id, stats]) => {
-        const menuItem = menuItemsById[id] || {};
-        return `
-        <div class="product-card">
-          <div class="product-info">
-            <h3>${menuItem.name || 'Unknown Item'}</h3>
-            <p>${menuItem.category || 'Uncategorized'}</p>
-          </div>
-          <div class="product-stats">
-            <p class="product-stat">${formatBDT(stats.revenue)}</p>
-            <p class="product-stat-label">${stats.quantity} sold</p>
-          </div>
-        </div>`;
-      }).join('') : '<p class="empty-message">No sales data available.</p>';
-
-  const allItemsEl = document.getElementById('cafe-all-items');
-  allItemsEl.innerHTML = sortedByRevenue.length ? sortedByRevenue.map(([id, stats]) => {
+  document.getElementById('cafe-most-sold').innerHTML = mostSold.length ? mostSold.map(renderProdCard).join('') : '<p class="empty-message">No sales data.</p>';
+  document.getElementById('cafe-least-sold').innerHTML = leastSold.length ? leastSold.map(renderProdCard).join('') : '<p class="empty-message">No sales data.</p>';
+  
+  document.getElementById('cafe-all-items').innerHTML = sortedByRevenue.length ? sortedByRevenue.map(([id, stats]) => {
         const menuItem = menuItemsById[id] || {};
         return `
         <div class="tx-item">
@@ -415,34 +427,42 @@ function renderCafeStats() {
           </div>
           <div class="tx-amount">${formatBDT(stats.revenue)}</div>
         </div>`;
-      }).join('') : '<p class="empty-message">No menu items sold in this period.</p>';
+      }).join('') : '<p class="empty-message">No menu items sold.</p>';
 }
 
 function renderSupplementStats() {
   // 1. Calculate Total Sales (Revenue)
   const totalSales = suppOrders.reduce((s, o) => s + Number(o.total_amount || 0), 0);
 
-  // 2. Calculate Supplement Expenses (Buying Price / Restocking Cost)
-  // We filter expenses to only find those labeled 'Supplement'
+  // 2. Calculate Supplement Expenses
   const suppExpenses = expenses
     .filter(e => e.category === 'Supplement')
     .reduce((sum, e) => sum + Number(e.amount || 0), 0);
 
-  // 3. Calculate Net Profit (Sales - Cost of Goods Bought)
+  // 3. Calculate Net Profit
   const netProfit = totalSales - suppExpenses;
 
-  // 4. Update DOM Elements
+  // --- CRITICAL UPDATE: Update the Top Dashboard Cards ---
+  const topRevEl = document.getElementById('top-supp-revenue');
+  const topProfitEl = document.getElementById('top-supp-profit');
+  
+  if (topRevEl) topRevEl.textContent = formatBDT(totalSales);
+  if (topProfitEl) {
+    topProfitEl.textContent = formatBDT(netProfit);
+    topProfitEl.style.color = netProfit < 0 ? '#ef4444' : '';
+  }
+  // -------------------------------------------------------
+
+  // 4. Update Internal Tab Content
   document.getElementById('supp-total-sales').textContent = formatBDT(totalSales);
   
-  // Update the new Profit Card
-  const profitEl = document.getElementById('supp-net-profit');
-  if (profitEl) {
-    profitEl.textContent = formatBDT(netProfit);
-    // Optional: Make text red if negative (meaning you bought more stock than you sold)
-    profitEl.style.color = netProfit < 0 ? '#ef4444' : '';
+  const tabProfitEl = document.getElementById('supp-net-profit');
+  if (tabProfitEl) {
+    tabProfitEl.textContent = formatBDT(netProfit);
+    tabProfitEl.style.color = netProfit < 0 ? '#ef4444' : '';
   }
 
-  // 5. Payment Breakdown (Unchanged)
+  // 5. Payment Breakdown
   const suppPay = getPaymentBreakdown(suppOrders);
   let suppBreakdown = `Cash: ${formatBDT(suppPay.cash)} • bKash: ${formatBDT(suppPay.bkash)} • Card: ${formatBDT(suppPay.card)}`;
   if (suppPay.other > 0) suppBreakdown += ` • Other: ${formatBDT(suppPay.other)}`;
@@ -490,13 +510,23 @@ function renderTopSupplements(items, prodMap) {
 }
 
 function renderLowStock(list) {
-  lowStockListEl.innerHTML = list.length
-    ? list.map(p => `<li><span>${p.name} <span class="tx-sub">(${p.brand || '—'})</span></span><span class="badge badge-danger">${p.stock} left</span></li>`).join('')
-    : `<li class="tx-sub">All good. No low-stock items.</li>`;
-  lowStockCountEl.textContent = list.length;
+  // Update the list inside the tab
+  if (lowStockListEl) {
+    lowStockListEl.innerHTML = list.length
+      ? list.map(p => `<li><span>${p.name} <span class="tx-sub">(${p.brand || '—'})</span></span><span class="badge badge-danger">${p.stock} left</span></li>`).join('')
+      : `<li class="tx-sub">All good. No low-stock items.</li>`;
+  }
+
+  // FIX: Only update the top counter if the element actually exists
+  if (lowStockCountEl) {
+    lowStockCountEl.textContent = list.length;
+  }
   
+  // Update the Supplement tab specific list
   const suppLowStockEl = document.getElementById('supp-low-stock-list');
-  if (suppLowStockEl) suppLowStockEl.innerHTML = lowStockListEl.innerHTML;
+  if (suppLowStockEl && lowStockListEl) {
+    suppLowStockEl.innerHTML = lowStockListEl.innerHTML;
+  }
 }
 
 function renderExpenses(list) {
@@ -645,55 +675,46 @@ function renderAllTransactions() {
 
   allTx.sort((a, b) => b.date - a.date);
 
-  // 2. Calculation Logic (Corrected)
-  // Revenue = All Positive Inflows (Cafe + Supp Sales)
-  // Expenses = All explicit Expenses (Rent, Bills, Buying Goods)
-  // Net Profit = Revenue - Expenses
-
+  // 2. Aggregate Calculation for the Transactions Tab (Bottom section)
   const cafeRevenue = cafeOrders.reduce((s, o) => s + Number(o.total_amount || 0), 0);
   const suppRevenue = suppOrders.reduce((s, o) => s + Number(o.total_amount || 0), 0);
   const totalRevenue = cafeRevenue + suppRevenue;
-
   const totalExpenses = expenses.reduce((s, e) => s + Number(e.amount || 0), 0);
   const netIncome = totalRevenue - totalExpenses;
 
-  // Update Top Cards
-  document.getElementById('all-tx-count').textContent = String(allTx.length);
-  document.getElementById('all-tx-revenue').textContent = formatBDT(totalRevenue);
-  document.getElementById('all-tx-expenses').textContent = formatBDT(totalExpenses);
-  document.getElementById('all-tx-net').textContent = formatBDT(netIncome);
-
-  // Update Global Summary Cards (Header)
-  totalRevenueEl.textContent = formatBDT(totalRevenue);
-  totalOrdersEl.textContent = String(cafeOrders.length + suppOrders.length);
-  netProfitEl.textContent = formatBDT(netIncome);
+  // Update Transactions Tab Summary Cards (These are at the bottom, safe to keep)
+  const txCountEl = document.getElementById('all-tx-count');
+  if (txCountEl) txCountEl.textContent = String(allTx.length);
+  
+  const txRevEl = document.getElementById('all-tx-revenue');
+  if (txRevEl) txRevEl.textContent = formatBDT(totalRevenue);
+  
+  const txExpEl = document.getElementById('all-tx-expenses');
+  if (txExpEl) txExpEl.textContent = formatBDT(totalExpenses);
+  
+  const txNetEl = document.getElementById('all-tx-net');
+  if (txNetEl) txNetEl.textContent = formatBDT(netIncome);
 
   // 3. Render Table with Filters
   const tbody = document.getElementById('all-transactions-body');
   
   const filterAndRender = () => {
     const query = txSearchBox.value.toLowerCase();
-    const catFilter = txCategoryFilter.value; // 'all', 'Cafe', 'Supplement', 'Expense'
+    const catFilter = txCategoryFilter.value; 
 
     const filtered = allTx.filter((tx) => {
-        // Text Search
         const matchesText = 
             tx.customer.toLowerCase().includes(query) ||
             tx.orderId.toLowerCase().includes(query) ||
             tx.type.toLowerCase().includes(query);
         
-        // Category Filter
         let matchesCat = true;
         if (catFilter !== 'all') {
             if (catFilter === 'Expense') {
                 matchesCat = (tx.type === 'Expense');
             } else {
-                // For Cafe or Supplement, we want positive transactions OR expenses of that category
-                // Logic: If filter is "Cafe", show Cafe Sales AND Cafe Expenses
-                const txCat = (tx.category || '').toLowerCase(); // 'cafe', 'supplement', 'general'
+                const txCat = (tx.category || '').toLowerCase();
                 const filterLower = catFilter.toLowerCase();
-                
-                // If the transaction type matches (e.g. Type 'Café') OR the expense category matches
                 if (tx.type.toLowerCase() === filterLower) matchesCat = true;
                 else if (tx.type === 'Expense' && txCat === filterLower) matchesCat = true;
                 else matchesCat = false;
@@ -717,14 +738,10 @@ function renderAllTransactions() {
     attachDeleteHandlers();
   };
 
-  // Attach listeners
   txSearchBox.oninput = filterAndRender;
   txCategoryFilter.onchange = filterAndRender;
-  
-  // Initial render
   filterAndRender();
 }
-
 function toCSV(rows) {
   if (!rows.length) return '';
   const cols = Object.keys(rows[0]);

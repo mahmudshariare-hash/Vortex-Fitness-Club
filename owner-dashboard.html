@@ -24,49 +24,51 @@
 
   <main class="container">
     <section class="filters-card">
-      <div class="filters-left">
-        <button class="filter-btn active" data-range="today">Today</button>
-        <button class="filter-btn" data-range="7d">Last 7 days</button>
-        <button class="filter-btn" data-range="30d">Last 30 days</button>
-        <button class="filter-btn" data-range="custom">Custom</button>
-        <input id="date-range-picker" class="date-input" placeholder="Select date range" />
-      </div>
+     <div class="filters-left">
+  <button class="filter-btn active" data-range="all">All Time</button> 
+  <button class="filter-btn" data-range="today">Today</button>
+  <button class="filter-btn" data-range="7d">Last 7 days</button>
+  <button class="filter-btn" data-range="30d">Last 30 days</button>
+  <button class="filter-btn" data-range="custom">Custom</button>
+  <input id="date-range-picker" class="date-input" placeholder="Select date range" />
+</div>
       <div class="filters-right">
         <button id="export-cafe" class="btn-secondary">Export Café CSV</button>
         <button id="export-supp" class="btn-secondary">Export Supplements CSV</button>
       </div>
     </section>
 
-    <section class="summary-grid">
-      <div class="summary-card">
-        <div class="summary-icon bg-cyan"><i data-lucide="banknote"></i></div>
-        <div>
-          <p class="summary-label">Total Revenue</p>
-          <p id="total-revenue" class="summary-value">৳0.00</p>
-        </div>
-      </div>
-      <div class="summary-card">
-        <div class="summary-icon bg-green"><i data-lucide="check-circle-2"></i></div>
-        <div>
-          <p class="summary-label">Total Orders</p>
-          <p id="total-orders" class="summary-value">0</p>
-        </div>
-      </div>
-      <div class="summary-card">
-        <div class="summary-icon bg-amber"><i data-lucide="trending-up"></i></div>
-        <div>
-          <p class="summary-label">Net Profit (Rev - Exp)</p>
-          <p id="net-profit" class="summary-value">৳0.00</p>
-        </div>
-      </div>
-      <div class="summary-card">
-        <div class="summary-icon bg-red"><i data-lucide="alert-triangle"></i></div>
-        <div>
-          <p class="summary-label">Low Stock Items</p>
-          <p id="low-stock-count" class="summary-value">0</p>
-        </div>
-      </div>
-    </section>
+<section class="summary-grid">
+  <div class="summary-card">
+    <div class="summary-icon bg-cyan"><i data-lucide="coffee"></i></div>
+    <div>
+      <p class="summary-label">Café Revenue</p>
+      <p id="top-cafe-revenue" class="summary-value">৳0.00</p>
+    </div>
+  </div>
+  <div class="summary-card">
+    <div class="summary-icon bg-cyan"><i data-lucide="trending-up"></i></div>
+    <div>
+      <p class="summary-label">Café Profit</p>
+      <p id="top-cafe-profit" class="summary-value">৳0.00</p>
+    </div>
+  </div>
+
+  <div class="summary-card">
+    <div class="summary-icon bg-amber"><i data-lucide="pill"></i></div>
+    <div>
+      <p class="summary-label">Supp. Revenue</p>
+      <p id="top-supp-revenue" class="summary-value">৳0.00</p>
+    </div>
+  </div>
+  <div class="summary-card">
+    <div class="summary-icon bg-amber"><i data-lucide="wallet"></i></div>
+    <div>
+      <p class="summary-label">Supp. Profit</p>
+      <p id="top-supp-profit" class="summary-value">৳0.00</p>
+    </div>
+  </div>
+</section>
 
     <div id="loading" class="loading visible">
       <div class="spinner"></div>
