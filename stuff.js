@@ -706,7 +706,63 @@ async function openEditModal(id) {
   itemModal.classList.remove('hidden');
   window.lucide?.createIcons();
 }
+// --- VARIANT HELPER FUNCTIONS ---
 
+function toggleVariantSection() {
+    const hasVariants = document.getElementById('supp-has-variants').checked;
+    const stdSection = document.getElementById('standard-pricing-section');
+    const varSection = document.getElementById('variants-section');
+
+    if (hasVariants) {
+        stdSection.classList.add('hidden');
+        varSection.classList.remove('hidden');
+        // Un-require standard fields so form can submit
+        document.getElementById('supp-price').removeAttribute('required');
+        document.getElementById('supp-buying').removeAttribute('required');
+        document.getElementById('supp-stock').removeAttribute('required');
+    } else {
+        stdSection.classList.remove('hidden');
+        varSection.classList.add('hidden');
+        // Re-require standard fields
+        document.getElementById('supp-price').setAttribute('required', 'true');
+        document.getElementById('supp-buying').setAttribute('required', 'true');
+        document.getElementById('supp-stock').setAttribute('required', 'true');
+    }
+}
+
+function addVariantRow(data = {}) {
+    const container = document.getElementById('variants-container');
+    
+    const div = document.createElement('div');
+    div.className = 'variant-row';
+    div.style.cssText = "display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 30px; gap: 10px; margin-bottom: 10px; align-items: end; background: white; padding: 10px; border-radius: 6px; border: 1px solid #e5e7eb;";
+    
+    div.innerHTML = `
+        <div>
+            <label style="font-size:0.75rem; font-weight:600; color:#64748b;">Option Name</label>
+            <input type="text" class="var-name" placeholder="e.g. Unflavoured" value="${data.name || ''}" style="width:100%; padding:6px; border:1px solid #cbd5e1; border-radius:4px;">
+        </div>
+        <div>
+            <label style="font-size:0.75rem; font-weight:600; color:#64748b;">Sell Price</label>
+            <input type="number" class="var-price" placeholder="0" value="${data.price || ''}" style="width:100%; padding:6px; border:1px solid #cbd5e1; border-radius:4px;">
+        </div>
+        <div>
+            <label style="font-size:0.75rem; font-weight:600; color:#64748b;">Buy Price</label>
+            <input type="number" class="var-buy" placeholder="0" value="${data.buying_price || ''}" style="width:100%; padding:6px; border:1px solid #cbd5e1; border-radius:4px;">
+        </div>
+        <div>
+            <label style="font-size:0.75rem; font-weight:600; color:#64748b;">Stock</label>
+            <input type="number" class="var-stock" placeholder="0" value="${data.stock || ''}" style="width:100%; padding:6px; border:1px solid #cbd5e1; border-radius:4px;">
+        </div>
+        <button type="button" class="btn-danger remove-var" style="height:32px; width:32px; display:flex; align-items:center; justify-content:center; border-radius:4px; border:none; cursor:pointer;">
+            <i data-lucide="trash-2" style="width:16px;"></i>
+        </button>
+    `;
+
+    div.querySelector('.remove-var').onclick = () => div.remove();
+    container.appendChild(div);
+    if(window.lucide) lucide.createIcons();
+}
 function openAddModal() {
   editingItemId = null;
   modalTitle.textContent = 'Add Menu Item';
@@ -923,47 +979,61 @@ function openAddSupplementModal() {
   suppModalTitle.textContent = 'Add Product';
   suppForm.reset();
   $('#supp-current-image').textContent = '';
+  
+  // Reset Variants UI
+  $('#supp-has-variants').checked = false;
+  $('#variants-container').innerHTML = '';
+  // Add two default rows for convenience
+  addVariantRow({ name: 'Unflavoured' }); 
+  addVariantRow({ name: 'Flavoured' }); 
+  
+  toggleVariantSection();
   suppModal.classList.remove('hidden');
   window.lucide?.createIcons();
 }
 
 async function openEditSupplementModal(id) {
-  const { data, error } = await supabase
-    .from('supplement_products')
-    .select('*')
-    .eq('id', id)
-    .single();
-  if (error) {
-    console.error(error);
-    alert('Could not load product.');
-    return;
-  }
+  const { data, error } = await supabase.from('supplement_products').select('*').eq('id', id).single();
+  if (error) { console.error(error); alert('Could not load product.'); return; }
+  
   currentEditingSuppId = id;
   suppModalTitle.textContent = 'Edit Product';
 
-  const setVal = (elId, val = '') => {
-    const el = document.getElementById(elId);
-    if (el) el.value = val ?? '';
-  };
+  const setVal = (elId, val = '') => { const el = document.getElementById(elId); if (el) el.value = val ?? ''; };
   setVal('supplement-id', data.id);
   setVal('supp-name', data.name);
   setVal('supp-brand', data.brand || '');
   setVal('supp-category', data.category);
-  setVal('supp-price', data.price);
-  setVal('supp-buying', data.buying_price ?? 0);
-  setVal('supp-stock', data.stock);
   setVal('supp-description', data.description || '');
   setVal('supp-tags', data.tags || '');
   setVal('supp-rating', data.rating || '');
 
+  // Handle Variants
+  const hasVariants = data.variants && Array.isArray(data.variants) && data.variants.length > 0;
+  $('#supp-has-variants').checked = hasVariants;
+  $('#variants-container').innerHTML = '';
+  
+  if (hasVariants) {
+      data.variants.forEach(v => addVariantRow(v));
+  } else {
+      // Default rows if switching to variants for first time
+      setVal('supp-price', data.price);
+      setVal('supp-buying', data.buying_price ?? 0);
+      setVal('supp-stock', data.stock);
+      addVariantRow({ name: 'Unflavoured' });
+      addVariantRow({ name: 'Flavoured' });
+  }
+  
+  toggleVariantSection();
+  
+  // Featured & Image
   const feat = $('#supp-featured');
   if (feat) feat.checked = !!data.is_featured;
   const currentImg = $('#supp-current-image');
   if (currentImg) {
-    currentImg.textContent = data.image_url
-      ? `Current: ${data.image_url.split('/').pop()}`
-      : 'No image uploaded.';
+    currentImg.textContent = data.image_url ? `Current: ${data.image_url.split('/').pop()}` : 'No image uploaded.';
   }
+  
   suppModal.classList.remove('hidden');
   window.lucide?.createIcons();
 }
@@ -975,95 +1045,84 @@ async function handleSupplementSubmit(e) {
   btn.textContent = 'Saving…';
 
   const gv = (id) => document.getElementById(id)?.value ?? '';
-  const required = {
-    name: gv('supp-name').trim(),
-    category: gv('supp-category'),
-    price: Number(gv('supp-price')),
-    buying_price: Number(gv('supp-buying')),
-    stock: Number(gv('supp-stock')),
-  };
+  const hasVariants = $('#supp-has-variants').checked;
+  
+  let finalPrice = 0;
+  let finalBuyPrice = 0;
+  let finalStock = 0;
+  let variantsData = [];
 
-  if (
-    !required.name ||
-    !required.category ||
-    isNaN(required.price) ||
-    isNaN(required.buying_price) ||
-    isNaN(required.stock)
-  ) {
-    alert('Please fill in Name, Category, Price, Buying Price, and Stock.');
-    btn.disabled = false;
-    btn.textContent = 'Save Product';
-    return;
+  if (hasVariants) {
+      const rows = document.querySelectorAll('.variant-row');
+      rows.forEach(r => {
+          const name = r.querySelector('.var-name').value.trim();
+          const price = parseFloat(r.querySelector('.var-price').value);
+          const buy = parseFloat(r.querySelector('.var-buy').value);
+          const stock = parseFloat(r.querySelector('.var-stock').value);
+          
+          if(name && !isNaN(price) && !isNaN(buy) && !isNaN(stock)) {
+             variantsData.push({ name, price, buying_price: buy, stock }); 
+          }
+      });
+      
+      if(variantsData.length === 0) {
+          alert("Please fill in at least one variant option correctly.");
+          btn.disabled = false; return;
+      }
+      
+      // We set the main columns to aggregate values so sorting still works
+      finalPrice = Math.min(...variantsData.map(v => v.price)); 
+      finalBuyPrice = Math.min(...variantsData.map(v => v.buying_price));
+      finalStock = variantsData.reduce((sum, v) => sum + v.stock, 0);
+      
+  } else {
+      finalPrice = Number(gv('supp-price'));
+      finalBuyPrice = Number(gv('supp-buying'));
+      finalStock = Number(gv('supp-stock'));
+      variantsData = null; 
   }
 
+  const payload = {
+    name: gv('supp-name').trim(),
+    brand: gv('supp-brand') || null,
+    category: gv('supp-category'),
+    price: finalPrice,
+    buying_price: finalBuyPrice,
+    stock: finalStock,
+    variants: variantsData, 
+    description: gv('supp-description') || null,
+    is_featured: !!document.getElementById('supp-featured')?.checked,
+    tags: gv('supp-tags') || null,
+    rating: document.getElementById('supp-rating')?.value ? Number(document.getElementById('supp-rating').value) : null,
+    updated_at: new Date().toISOString(),
+    available: finalStock > 0,
+  };
+
+  // Upload Image Logic
   let imageUrl = null;
   const imageFile = document.getElementById('supp-image')?.files?.[0];
   if (imageFile) {
-    try {
       const { base, ext } = slugifyName(imageFile.name);
       const filePath = `public/${Date.now()}-${base}.${ext}`;
       const { data: uploadData, error: upErr } = await supabase.storage
         .from(SUPP_BUCKET)
-        .upload(filePath, imageFile, {
-          cacheControl: '3600',
-          upsert: false,
-          contentType:
-            imageFile.type || `image/${ext === 'jpg' ? 'jpeg' : ext}`,
-        });
-      if (upErr) throw upErr;
-      const { data: urlData } = supabase.storage
-        .from(SUPP_BUCKET)
-        .getPublicUrl(uploadData.path);
-      imageUrl = urlData?.publicUrl || null;
-    } catch (err) {
-      console.error('Image upload failed:', err);
-      alert(
-        err?.message?.includes('Bucket not found')
-          ? 'Storage bucket not found. Create a PUBLIC bucket named "supplement-images" in Supabase.'
-          : 'Image upload failed. Please try another image.'
-      );
-      btn.disabled = false;
-      btn.textContent = 'Save Product';
-      return;
-    }
+        .upload(filePath, imageFile, { upsert: false, contentType: imageFile.type });
+      if (!upErr) {
+          const { data: urlData } = supabase.storage.from(SUPP_BUCKET).getPublicUrl(uploadData.path);
+          imageUrl = urlData?.publicUrl || null;
+      }
   }
-
-  const payload = {
-    name: required.name,
-    brand: gv('supp-brand') || null,
-    category: required.category,
-    price: required.price,
-    buying_price: required.buying_price,
-    stock: required.stock,
-    description: gv('supp-description') || null,
-    is_featured: !!document.getElementById('supp-featured')?.checked,
-    tags: gv('supp-tags') || null,
-    rating: (() => {
-      const v = document.getElementById('supp-rating')?.value;
-      return v === '' || v == null ? null : Number(v);
-    })(),
-    updated_at: new Date().toISOString(),
-    available: required.stock > 0,
-  };
-
   if (imageUrl) payload.image_url = imageUrl;
+  
   let error;
   if (currentEditingSuppId) {
-    ({ error } = await supabase
-      .from('supplement_products')
-      .update(payload)
-      .eq('id', currentEditingSuppId));
+    ({ error } = await supabase.from('supplement_products').update(payload).eq('id', currentEditingSuppId));
   } else {
     ({ error } = await supabase.from('supplement_products').insert([payload]));
   }
 
-  if (error) {
-    console.error(error);
-    alert('Failed to save product.');
-  } else {
-    suppModal.classList.add('hidden');
-    await loadSupplements();
-  }
+  if (error) { console.error(error); alert('Failed to save product.'); } 
+  else { suppModal.classList.add('hidden'); await loadSupplements(); }
 
   btn.disabled = false;
   btn.textContent = 'Save Product';
@@ -1131,32 +1190,23 @@ async function deleteSupplement(id) {
     await loadSupplements();
   }
 }
-
 function bindSupplementsEvents() {
-  addSuppBtn?.addEventListener('click', openAddSupplementModal);
-  suppCloseBtn?.addEventListener('click', () =>
-    suppModal.classList.add('hidden')
-  );
-  suppCancelBtn?.addEventListener('click', () =>
-    suppModal.classList.add('hidden')
-  );
-  suppForm?.addEventListener('submit', handleSupplementSubmit);
+  $('#add-supplement-btn')?.addEventListener('click', openAddSupplementModal);
+  $('#supplement-close-btn')?.addEventListener('click', () => suppModal.classList.add('hidden'));
+  $('#supp-cancel-btn')?.addEventListener('click', () => suppModal.classList.add('hidden'));
+  $('#supplement-form')?.addEventListener('submit', handleSupplementSubmit);
+  
+  // NEW LISTENERS
+  $('#add-variant-btn')?.addEventListener('click', () => addVariantRow());
+  $('#supp-has-variants')?.addEventListener('change', toggleVariantSection);
 
-  supplementsSection?.addEventListener('click', (e) => {
+  $('#supplements-section')?.addEventListener('click', (e) => {
+    // ... existing table button logic (edit, delete, toggle status) ...
     const btn = e.target.closest('button');
     if (!btn) return;
-    if (btn.classList.contains('status-toggle')) {
-      toggleSupplementAvailability(
-        btn.dataset.suppId,
-        btn.dataset.currentStatus === 'true'
-      );
-    }
-    if (btn.classList.contains('edit-supp')) {
-      openEditSupplementModal(btn.dataset.suppId);
-    }
-    if (btn.classList.contains('delete-supp')) {
-      deleteSupplement(btn.dataset.suppId);
-    }
+    if (btn.classList.contains('status-toggle')) toggleSupplementAvailability(btn.dataset.suppId, btn.dataset.currentStatus === 'true');
+    if (btn.classList.contains('edit-supp')) openEditSupplementModal(btn.dataset.suppId);
+    if (btn.classList.contains('delete-supp')) deleteSupplement(btn.dataset.suppId);
   });
 }
 
