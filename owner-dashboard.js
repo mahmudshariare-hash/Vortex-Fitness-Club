@@ -188,6 +188,10 @@ function applyQuickRange(code) {
   const now = new Date();
   if (code === 'today') {
     range = { from: startOfDay(now), to: endOfDay(now) };
+  } else if (code === 'this-month') {
+    // NEW: First day of current month to Now
+    const from = new Date(now.getFullYear(), now.getMonth(), 1);
+    range = { from: startOfDay(from), to: endOfDay(now) };
   } else if (code === '7d') {
     const from = new Date(now);
     from.setDate(from.getDate() - 6);
@@ -197,11 +201,9 @@ function applyQuickRange(code) {
     from.setDate(from.getDate() - 29);
     range = { from: startOfDay(from), to: endOfDay(now) };
   } else if (code === 'all') {
-    // Set to null so we know to fetch EVERYTHING
     range = { from: null, to: null };
   }
 }
-
 const iso = (d) => d.toISOString();
 
 function initDatePicker() {
@@ -280,12 +282,11 @@ async function fetchSuppOrderItemsFor(ids) {
   if (!ids.length) return [];
   const { data, error } = await supabaseClient
     .from('supplement_order_items')
-    .select('order_id,supplement_product_id,quantity,price_at_order')
+    .select('order_id,supplement_product_id,quantity,price_at_order,item_name') // Added item_name here
     .in('order_id', ids);
   if (error) return [];
   return data || [];
 }
-
 async function fetchSuppProductsMap() {
   // Added 'variants' to the select query
   const { data, error } = await supabaseClient
@@ -431,38 +432,77 @@ function renderCafeStats() {
 }
 
 function renderSupplementStats() {
-  // 1. Calculate Total Sales (Revenue)
-  const totalSales = suppOrders.reduce((s, o) => s + Number(o.total_amount || 0), 0);
+  // --- CONFIGURATION: SET YOUR STARTING CAPITAL HERE ---
+  // If you started with 1 Lakh, set this to 100000. 
+  // If you don't want to track capital, set it to 0.
+  const INITIAL_CAPITAL = 0; 
+  // ----------------------------------------------------
 
-  // 2. Calculate Supplement Expenses
-  const suppExpenses = expenses
+  // 1. Calculate Total Revenue (Money In from Sales)
+  const totalRevenue = suppOrders.reduce((s, o) => s + Number(o.total_amount || 0), 0);
+
+  // 2. Calculate Total Invested (Total Expenses for Supplements)
+  // Logic: Sum of all expenses categorized as 'Supplement'
+  const totalInvested = expenses
     .filter(e => e.category === 'Supplement')
     .reduce((sum, e) => sum + Number(e.amount || 0), 0);
 
-  // 3. Calculate Net Profit
-  const netProfit = totalSales - suppExpenses;
+  // 3. Calculate Cash in Hand (The Formula you requested)
+  // Formula: (Initial Capital + Revenue) - Total Invested
+  const cashInHand = (INITIAL_CAPITAL + totalRevenue) - totalInvested;
 
-  // --- CRITICAL UPDATE: Update the Top Dashboard Cards ---
+  // 4. Calculate Realized Profit (Sales Margin)
+  // Logic: For every item sold -> (Selling Price - Buying Price) * Quantity
+  let realizedProfit = 0;
+  
+  suppItems.forEach(item => {
+      const product = supplementProductsById[item.supplement_product_id] || {};
+      const buyingPrice = Number(product.buying_price || 0); // Cost of Goods
+      const sellingPrice = Number(item.price_at_order || 0); // Sold Price
+      const qty = Number(item.quantity || 0);
+
+      // Profit for this specific item
+      realizedProfit += (sellingPrice - buyingPrice) * qty;
+  });
+
+  // --- UPDATE TOP DASHBOARD CARDS ---
   const topRevEl = document.getElementById('top-supp-revenue');
+  const topInvestedEl = document.getElementById('top-supp-invested');
+  const topCashEl = document.getElementById('top-supp-cash');
   const topProfitEl = document.getElementById('top-supp-profit');
   
-  if (topRevEl) topRevEl.textContent = formatBDT(totalSales);
-  if (topProfitEl) {
-    topProfitEl.textContent = formatBDT(netProfit);
-    topProfitEl.style.color = netProfit < 0 ? '#ef4444' : '';
+  // 1. Revenue
+  if (topRevEl) topRevEl.textContent = formatBDT(totalRevenue);
+  
+  // 2. Total Invested (Positive Number)
+  if (topInvestedEl) {
+      topInvestedEl.textContent = formatBDT(totalInvested); 
   }
-  // -------------------------------------------------------
 
-  // 4. Update Internal Tab Content
-  document.getElementById('supp-total-sales').textContent = formatBDT(totalSales);
+  // 3. Cash in Hand
+  if (topCashEl) {
+      topCashEl.textContent = formatBDT(cashInHand);
+      // Green if you have cash, Red if you are "in the hole" (spent more than you have)
+      topCashEl.style.color = cashInHand < 0 ? '#ef4444' : '#10b981'; 
+  }
+
+  // 4. Realized Profit
+  if (topProfitEl) {
+      topProfitEl.textContent = formatBDT(realizedProfit);
+      topProfitEl.style.color = realizedProfit >= 0 ? '#10b981' : '#ef4444';
+  }
+
+  // --- Update Internal Tab Content (Keep existing functionality) ---
+  document.getElementById('supp-total-sales').textContent = formatBDT(totalRevenue);
   
   const tabProfitEl = document.getElementById('supp-net-profit');
   if (tabProfitEl) {
-    tabProfitEl.textContent = formatBDT(netProfit);
-    tabProfitEl.style.color = netProfit < 0 ? '#ef4444' : '';
+    // We show the Realized Profit in the tab as well
+    tabProfitEl.textContent = formatBDT(realizedProfit);
+    tabProfitEl.style.color = realizedProfit >= 0 ? '#10b981' : '#ef4444';
   }
 
-  // 5. Payment Breakdown
+  // Payment Breakdown
   const suppPay = getPaymentBreakdown(suppOrders);
   let suppBreakdown = `Cash: ${formatBDT(suppPay.cash)} • bKash: ${formatBDT(suppPay.bkash)} • Card: ${formatBDT(suppPay.card)}`;
   if (suppPay.other > 0) suppBreakdown += ` • Other: ${formatBDT(suppPay.other)}`;
@@ -624,7 +664,20 @@ function attachDeleteHandlers() {
 }
 
 function renderAllTransactions() {
-  // 1. Gather all data
+  // 1. Prepare a map of OrderID -> Item Names for Supplements
+  // This allows us to find the product name using the order ID
+  const suppItemMap = {};
+  if (suppItems && suppItems.length) {
+    suppItems.forEach(item => {
+      if (!suppItemMap[item.order_id]) {
+        suppItemMap[item.order_id] = [];
+      }
+      // Store the name (e.g. "Gold Standard Whey")
+      suppItemMap[item.order_id].push(item.item_name || 'Unknown Item');
+    });
+  }
+
+  // 2. Gather all data
   const allTx = [];
 
   // Cafe Income
@@ -647,12 +700,18 @@ function renderAllTransactions() {
   suppOrders.forEach((order) => {
     const payments = order.payments || [];
     const last = payments[payments.length - 1] || null;
+
+    // --- FIX: Lookup Product Names ---
+    // If names exist, join them with commas. If not, fallback to Order ID.
+    const productNames = suppItemMap[order.id] ? suppItemMap[order.id].join(', ') : '';
+    const displayDesc = productNames || String(order.id).slice(0, 8).toUpperCase();
+
     allTx.push({
       date: new Date(order.created_at),
       type: 'Supplement',
       category: 'Supplement',
       customer: last ? prettyPaymentMethod(last.method) : '—',
-      orderId: String(order.id).slice(0, 8).toUpperCase(),
+      orderId: displayDesc, // Using the Product Name here
       amount: Number(order.total_amount || 0),
       table: 'supplement_orders',
       recordId: order.id,
@@ -667,7 +726,7 @@ function renderAllTransactions() {
       category: exp.category || 'General',
       customer: exp.category || 'General',
       orderId: exp.description,
-      amount: -Number(exp.amount || 0), // Negative for display logic
+      amount: -Number(exp.amount || 0), 
       table: 'expenses',
       recordId: exp.id,
     });
@@ -675,14 +734,13 @@ function renderAllTransactions() {
 
   allTx.sort((a, b) => b.date - a.date);
 
-  // 2. Aggregate Calculation for the Transactions Tab (Bottom section)
+  // 3. Aggregate Calculation (Bottom Section)
   const cafeRevenue = cafeOrders.reduce((s, o) => s + Number(o.total_amount || 0), 0);
   const suppRevenue = suppOrders.reduce((s, o) => s + Number(o.total_amount || 0), 0);
   const totalRevenue = cafeRevenue + suppRevenue;
   const totalExpenses = expenses.reduce((s, e) => s + Number(e.amount || 0), 0);
   const netIncome = totalRevenue - totalExpenses;
 
-  // Update Transactions Tab Summary Cards (These are at the bottom, safe to keep)
   const txCountEl = document.getElementById('all-tx-count');
   if (txCountEl) txCountEl.textContent = String(allTx.length);
   
@@ -695,7 +753,7 @@ function renderAllTransactions() {
   const txNetEl = document.getElementById('all-tx-net');
   if (txNetEl) txNetEl.textContent = formatBDT(netIncome);
 
-  // 3. Render Table with Filters
+  // 4. Render Table with Filters
   const tbody = document.getElementById('all-transactions-body');
   
   const filterAndRender = () => {
@@ -845,7 +903,7 @@ function setupEvents() {
   });
 
   // Set default range
-  applyQuickRange('today');
+  applyQuickRange('all');
 
   // 2. Export CSV Buttons
   exportCafeBtn.addEventListener('click', () => {
